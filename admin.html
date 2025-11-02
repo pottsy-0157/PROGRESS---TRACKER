@@ -225,36 +225,6 @@
 
     <script>
       (() => {
-        const ADMIN_EMAIL = "Lewispotts0310@gmail.com";
-        const ADMIN_PASSWORD = "Lewis-01570";
-
-        let currentUser = {};
-        try {
-          currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
-        } catch (e) {}
-
-        if (
-          !currentUser.email ||
-          currentUser.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()
-        ) {
-          const email = prompt("Admin Email:");
-          const password = prompt("Admin Password:");
-          if (
-            email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() &&
-            password === ADMIN_PASSWORD
-          ) {
-            currentUser = {
-              uid: "uid_admin",
-              email: ADMIN_EMAIL,
-              password: ADMIN_PASSWORD,
-            };
-            localStorage.setItem("currentUser", JSON.stringify(currentUser));
-          } else {
-            alert("Access denied! Admins only.");
-            window.location.href = "login.html";
-          }
-        }
-
         // --- WORKOUTS ---
         let workouts = JSON.parse(localStorage.getItem("workouts") || "[]");
         const tableBody = document.querySelector("#workoutTable tbody");
