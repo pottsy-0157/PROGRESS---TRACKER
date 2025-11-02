@@ -222,173 +222,183 @@
       </div>
     </div>
 
-    <script>
-      (() => {
-        // --- WORKOUTS ---
-        let workouts = JSON.parse(localStorage.getItem("workouts") || "[]");
-        const tableBody = document.querySelector("#workoutTable tbody");
-        const workoutDetailsEl = document.getElementById("workoutDetails");
-        const addBtn = document.getElementById("addBtn");
+   <script>
+(() => {
+  // --- WORKOUTS ---
+  let workouts = JSON.parse(localStorage.getItem("workouts") || "[]");
+  const tableBody = document.querySelector("#workoutTable tbody");
+  const workoutDetailsEl = document.getElementById("workoutDetails");
+  const addBtn = document.getElementById("addBtn");
 
-        function cleanWorkout(details) {
-          return details
-            .split("\n")
-            .filter((l) => l.trim())
-            .map((line) => {
-              line = line.trim();
-              let match = line.match(/(\d+)\s*[x*]\s*(\d+)/i);
-              let sets = match ? match[1] : "";
-              let reps = match ? match[2] : "";
-              let weightMatch = line.match(/(\d+)\s*(kg|lb|lbs)/i);
-              let weight = weightMatch ? weightMatch[0] : "";
-              let cleanLine = line
-                .replace(/(\d+\s*[x*]\s*\d+)/i, "")
-                .replace(/(\d+\s*(kg|lb|lbs))/i, "")
-                .trim();
-              if (sets && reps)
-                return (
-                  cleanLine +
-                  " — " +
-                  sets +
-                  " x " +
-                  reps +
-                  (weight ? " @ " + weight : "")
-                );
-              return cleanLine;
-            })
-            .filter((l) => l)
-            .join("\n");
-        }
-
-        function renderWorkouts() {
-          tableBody.innerHTML = "";
-          workouts.forEach((w, i) => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `<td>${w.day}</td><td>${w.name}</td><td>${w.time}</td><td>${w.encouragement}</td><td><button class="remove-workout-btn" data-index="${i}">Remove</button></td>`;
-            tableBody.appendChild(tr);
-          });
-        }
-
-        addBtn.addEventListener("click", () => {
-          const day = document.getElementById("day").value;
-          const name = document.getElementById("name").value.trim();
-          const time = document.getElementById("time").value.trim();
-          const encouragement = document
-            .getElementById("encouragement")
-            .value.trim();
-          const details = workoutDetailsEl.value.trim();
-          if (!day || !name || !time || !encouragement)
-            return alert("Fill all fields!");
-          const formattedDetails = cleanWorkout(details);
-          workouts.push({
-            day,
-            name,
-            time,
-            encouragement,
-            details,
-            type: "Auto",
-          });
-          localStorage.setItem("workouts", JSON.stringify(workouts));
-          workoutDetailsEl.value = "";
-          renderWorkouts();
-        });
-
-        tableBody.addEventListener("click", (e) => {
-          if (!e.target.classList.contains("remove-workout-btn")) return;
-          const index = parseInt(e.target.dataset.index);
-          workouts.splice(index, 1);
-          localStorage.setItem("workouts", JSON.stringify(workouts));
-          renderWorkouts();
-        });
-
-        document.getElementById("logoutBtn").addEventListener("click", () => {
-          localStorage.removeItem("currentUser");
-          alert("Logged out!");
-          window.location.href = "login.html";
-        });
-
-        renderWorkouts();
-      })();
-
-      // --- HISTORY ---
-      const historyTable = document.querySelector("#historyTable tbody");
-      const detailModal = document.getElementById("detailModal");
-      const modalWorkoutName = document.getElementById("modalWorkoutName");
-      const modalExercises = document.getElementById("modalExercises");
-      const closeModal = document.getElementById("closeModal");
-
-      let completedWorkouts = JSON.parse(
-        localStorage.getItem("completedWorkouts") || "[]"
-      );
-
-      function renderHistory() {
-        historyTable.innerHTML = "";
-        completedWorkouts.forEach((w, i) => {
-          const durationMin = Math.floor((w.duration || 0) / 60);
-          const durationSec = (w.duration || 0) % 60;
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td>${new Date(
-            w.date
-          ).toLocaleDateString()}</td><td>${w.name}</td><td>${w.day}</td><td>${
-            w.time
-          }</td><td>${durationMin}m ${durationSec}s</td><td><button class="detail-btn" data-index="${i}">More Details</button></td><td><button class="remove-btn" data-index="${i}">Remove</button></td>`;
-          historyTable.appendChild(tr);
-        });
-      }
-
-      historyTable.addEventListener("click", (e) => {
-        const btn = e.target;
-        if (btn.classList.contains("detail-btn")) {
-          const workout = completedWorkouts[btn.dataset.index];
-          modalWorkoutName.textContent = workout.name;
-          modalExercises.innerHTML = "";
-          const scrollContainer = document.createElement("div");
-          scrollContainer.style.maxHeight = "300px";
-          scrollContainer.style.overflowY = "auto";
-          scrollContainer.style.marginTop = "8px";
-
-          const exTable = document.createElement("table");
-          exTable.style.width = "100%";
-          exTable.style.borderCollapse = "collapse";
-          const thead = document.createElement("thead");
-          thead.innerHTML = `<tr><th style="border-bottom:1px solid gold;padding:4px;">Exercise</th><th style="border-bottom:1px solid gold;padding:4px;">Sets</th><th style="border-bottom:1px solid gold;padding:4px;">Reps</th><th style="border-bottom:1px solid gold;padding:4px;">Weight</th></tr>`;
-          exTable.appendChild(thead);
-          const tbody = document.createElement("tbody");
-          workout.exercises.forEach((ex) => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `<td style="padding:4px;">${
-              ex.name
-            }</td><td style="padding:4px;">${
-              ex.sets || "-"
-            }</td><td style="padding:4px;">${
-              ex.reps || "-"
-            }</td><td style="padding:4px;">${ex.weight || "-"}</td>`;
-            tbody.appendChild(tr);
-          });
-          exTable.appendChild(tbody);
-          scrollContainer.appendChild(exTable);
-          modalExercises.appendChild(scrollContainer);
-          detailModal.style.display = "flex";
-        }
-
-        if (btn.classList.contains("remove-btn")) {
-          const index = parseInt(btn.dataset.index);
-          if (!confirm("Remove this completed workout?")) return;
-          completedWorkouts.splice(index, 1);
-          localStorage.setItem(
-            "completedWorkouts",
-            JSON.stringify(completedWorkouts)
+  function cleanWorkout(details) {
+    return details
+      .split("\n")
+      .filter((l) => l.trim())
+      .map((line) => {
+        line = line.trim();
+        let match = line.match(/(\d+)\s*[x*]\s*(\d+)/i);
+        let sets = match ? match[1] : "";
+        let reps = match ? match[2] : "";
+        let weightMatch = line.match(/(\d+)\s*(kg|lb|lbs)/i);
+        let weight = weightMatch ? weightMatch[0] : "";
+        let cleanLine = line
+          .replace(/(\d+\s*[x*]\s*\d+)/i, "")
+          .replace(/(\d+\s*(kg|lb|lbs))/i, "")
+          .trim();
+        if (sets && reps)
+          return (
+            cleanLine +
+            " — " +
+            sets +
+            " x " +
+            reps +
+            (weight ? " @ " + weight : "")
           );
-          renderHistory();
-        }
-      });
+        return cleanLine;
+      })
+      .filter((l) => l)
+      .join("\n");
+  }
 
-      closeModal.addEventListener("click", () => {
-        detailModal.style.display = "none";
-      });
+  function renderWorkouts() {
+    tableBody.innerHTML = "";
+    if (workouts.length === 0) {
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td colspan="5" style="text-align:center; color:#888;">No workouts yet.</td>';
+      tableBody.appendChild(tr);
+      return;
+    }
+    workouts.forEach((w, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${w.day}</td><td>${w.name}</td><td>${w.time}</td><td>${w.encouragement}</td><td><button class="remove-workout-btn" data-index="${i}">Remove</button></td>`;
+      tableBody.appendChild(tr);
+    });
+  }
 
+  addBtn.addEventListener("click", () => {
+    const day = document.getElementById("day").value;
+    const name = document.getElementById("name").value.trim();
+    const time = document.getElementById("time").value.trim();
+    const encouragement = document
+      .getElementById("encouragement")
+      .value.trim();
+    const details = workoutDetailsEl.value.trim();
+    if (!day || !name || !time || !encouragement)
+      return alert("Fill all fields!");
+    const formattedDetails = cleanWorkout(details);
+    workouts.push({
+      day,
+      name,
+      time,
+      encouragement,
+      details: formattedDetails,
+      type: "Auto",
+    });
+    localStorage.setItem("workouts", JSON.stringify(workouts));
+    workoutDetailsEl.value = "";
+    renderWorkouts();
+  });
+
+  tableBody.addEventListener("click", (e) => {
+    if (!e.target.classList.contains("remove-workout-btn")) return;
+    const index = parseInt(e.target.dataset.index);
+    workouts.splice(index, 1);
+    localStorage.setItem("workouts", JSON.stringify(workouts));
+    renderWorkouts();
+  });
+
+  renderWorkouts(); // 👈 always render on page load
+})();
+
+// --- HISTORY ---
+(() => {
+  const historyTable = document.querySelector("#historyTable tbody");
+  const detailModal = document.getElementById("detailModal");
+  const modalWorkoutName = document.getElementById("modalWorkoutName");
+  const modalExercises = document.getElementById("modalExercises");
+  const closeModal = document.getElementById("closeModal");
+
+  let completedWorkouts = JSON.parse(
+    localStorage.getItem("completedWorkouts") || "[]"
+  );
+
+  function renderHistory() {
+    historyTable.innerHTML = "";
+    if (completedWorkouts.length === 0) {
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td colspan="7" style="text-align:center; color:#888;">No completed workouts yet.</td>';
+      historyTable.appendChild(tr);
+      return;
+    }
+    completedWorkouts.forEach((w, i) => {
+      const durationMin = Math.floor((w.duration || 0) / 60);
+      const durationSec = (w.duration || 0) % 60;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${new Date(
+        w.date
+      ).toLocaleDateString()}</td><td>${w.name}</td><td>${w.day}</td><td>${
+        w.time
+      }</td><td>${durationMin}m ${durationSec}s</td><td><button class="detail-btn" data-index="${i}">More Details</button></td><td><button class="remove-btn" data-index="${i}">Remove</button></td>`;
+      historyTable.appendChild(tr);
+    });
+  }
+
+  historyTable.addEventListener("click", (e) => {
+    const btn = e.target;
+    if (btn.classList.contains("detail-btn")) {
+      const workout = completedWorkouts[btn.dataset.index];
+      modalWorkoutName.textContent = workout.name;
+      modalExercises.innerHTML = "";
+      const scrollContainer = document.createElement("div");
+      scrollContainer.style.maxHeight = "300px";
+      scrollContainer.style.overflowY = "auto";
+      scrollContainer.style.marginTop = "8px";
+
+      const exTable = document.createElement("table");
+      exTable.style.width = "100%";
+      exTable.style.borderCollapse = "collapse";
+      const thead = document.createElement("thead");
+      thead.innerHTML = `<tr><th style="border-bottom:1px solid gold;padding:4px;">Exercise</th><th style="border-bottom:1px solid gold;padding:4px;">Sets</th><th style="border-bottom:1px solid gold;padding:4px;">Reps</th><th style="border-bottom:1px solid gold;padding:4px;">Weight</th></tr>`;
+      exTable.appendChild(thead);
+      const tbody = document.createElement("tbody");
+      workout.exercises.forEach((ex) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td style="padding:4px;">${
+          ex.name
+        }</td><td style="padding:4px;">${ex.sets || "-"}</td><td style="padding:4px;">${
+          ex.reps || "-"
+        }</td><td style="padding:4px;">${ex.weight || "-"}</td>`;
+        tbody.appendChild(tr);
+      });
+      exTable.appendChild(tbody);
+      scrollContainer.appendChild(exTable);
+      modalExercises.appendChild(scrollContainer);
+      detailModal.style.display = "flex";
+    }
+
+    if (btn.classList.contains("remove-btn")) {
+      const index = parseInt(btn.dataset.index);
+      if (!confirm("Remove this completed workout?")) return;
+      completedWorkouts.splice(index, 1);
+      localStorage.setItem(
+        "completedWorkouts",
+        JSON.stringify(completedWorkouts)
+      );
       renderHistory();
-    </script>
+    }
+  });
+
+  closeModal.addEventListener("click", () => {
+    detailModal.style.display = "none";
+  });
+
+  renderHistory(); // 👈 always render on page load
+})();
+</script>
+
   </body>
 </html>
+
 
