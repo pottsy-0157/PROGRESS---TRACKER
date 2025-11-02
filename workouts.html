@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Workout Detail</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="script.js"></script>
+  </head>
+  <body>
+    <!-- Navbar -->
+    <nav id="navbar">
+      <div class="nav-center">
+        <a href="admin.html" class="logo">PROGRESS TRACKER</a>
+      </div>
+    </nav>
+
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+
+    <!-- View Toggle -->
+    <div class="view-toggle">
+      <button class="view-btn active" id="graphViewBtn">Graph View</button>
+      <button class="view-btn" id="calendarViewBtn">Calendar View</button>
+    </div>
+
+    <!-- Hide Button -->
+    <div class="hide-toggle">
+      <button class="hide-btn" id="hideViewBtn">Hide View</button>
+    </div>
+
+    <!-- Graph Section -->
+    <div class="progress-tracker" id="graphView">
+      <div class="tracker-controls">
+        <button class="tracker-btn active" data-type="run">Run</button>
+        <button class="tracker-btn" data-type="ski">SkiErg</button>
+        <button class="tracker-btn" data-type="row">Row</button>
+        <button class="tracker-btn" data-type="weights">Weights</button>
+      </div>
+      <div class="chart-scroll" id="chartScroll">
+        <div class="chart-wrapper">
+          <canvas id="progressChart"></canvas>
+        </div>
+      </div>
+      <form id="logForm" class="log-form">
+        <input
+          type="number"
+          id="workoutValue"
+          class="log-input"
+          placeholder="Enter time or kg"
+          step="0.01"
+        />
+        <input
+          type="number"
+          id="workoutDistance"
+          class="log-input"
+          placeholder="Distance (km)"
+          step="0.01"
+        />
+        <button type="submit" class="log-btn">Log</button>
+      </form>
+      <div id="paceSummary" class="pace-summary"></div>
+      <button
+        type="button"
+        id="undoBtn"
+        class="log-btn"
+        style="background: #e6c200"
+      >
+        Undo Last
+      </button>
+    </div>
+
+    <!-- Calendar Section -->
+    <div class="calendar-view hidden" id="calendarView">
+      <section class="schedule" id="schedule">
+        <h2>Calendar / Schedule</h2>
+        <p class="schedule-sub">
+          Weekly planner of workouts. Reminders for booked sessions.
+        </p>
+        <div class="week-controls">
+          <button id="prevWeek" class="week-btn" aria-label="Previous week">
+            ←
+          </button>
+          <div id="weekLabel" class="week-label"></div>
+          <button id="nextWeek" class="week-btn" aria-label="Next week">
+            →
+          </button>
+        </div>
+        <div id="weekGrid" class="week-grid"></div>
+        <div id="reminderToast" class="reminder-toast" aria-live="polite"></div>
+      </section>
+    </div>
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+
+    <div id="workoutsContainer"></div>
+
+    <script>
+      // Default workouts
+      const defaultWorkouts = [
+        {
+          day: "MONDAY",
+          name: "LOWER STRENGTH + EASY RUN",
+          time: "6:00 am – 7:00 am (UK)",
+          encouragement: "YOU GOT THIS!",
+        },
+        {
+          day: "TUESDAY",
+          name: "UPPER STRENGTH + SKI INTERVALS",
+          time: "6:00 am – 7:00 am (UK)",
+          encouragement: "YOU GOT THIS!",
+        },
+        {
+          day: "WEDNESDAY",
+          name: "ELEV8 RUN CLUB",
+          time: "6:00 pm – 7:00 pm (UK)",
+          encouragement: "YOU GOT THIS!",
+        },
+        {
+          day: "WEDNESDAY",
+          name: "CONDITIONING / ROW FOCUS",
+          time: "6:00 am – 7:00 am (UK)",
+          encouragement: "YOU GOT THIS!",
+        },
+        {
+          day: "THURSDAY",
+          name: "UPPER STRENGTH + SKI INTERVALS",
+          time: "6:00 am – 7:00 am (UK)",
+          encouragement: "YOU GOT THIS!",
+        },
+        {
+          day: "FRIDAY",
+          name: "UPPER STRENGTH + HYROX SIMULATION",
+          time: "6:00 am – 7:00 am (UK)",
+          encouragement: "YOU GOT THIS!",
+        },
+        {
+          day: "SATURDAY",
+          name: "HYROX SATURDAY",
+          time: "7:30 am – 8:30 am (UK)",
+          encouragement: "IT'S EASY!",
+        },
+        {
+          day: "SUNDAY",
+          name: "LONG RUN + CORE",
+          time: "6:00 am – 7:00 am (UK)",
+          encouragement: "KEEP IT UP!",
+        },
+      ];
+
+      // Load workouts from localStorage or use defaults
+      let workouts = JSON.parse(localStorage.getItem("workouts") || "null");
+      if (!workouts) {
+        workouts = defaultWorkouts;
+        localStorage.setItem("workouts", JSON.stringify(workouts));
+      }
+
+      const daysOrder = [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY",
+      ];
+
+      const container = document.getElementById("workoutsContainer");
+      container.innerHTML = "";
+
+      // Group workouts by day in the correct order
+      daysOrder.forEach((day) => {
+        const dayWorkouts = workouts.filter((w) => w.day === day);
+
+        if (dayWorkouts.length > 0) {
+          // Add day header
+          const dayHeader = document.createElement("h2");
+          dayHeader.textContent = day;
+          container.appendChild(dayHeader);
+
+          // Add workouts for this day
+          dayWorkouts.forEach((w) => {
+            const div = document.createElement("div");
+            div.className = "session-card";
+            div.innerHTML = `
+          <div class="card-header">
+            <h3>${w.name}</h3>
+            <span class="spaces">${w.encouragement || ""}</span>
+          </div>
+          <p><strong>${w.time}</strong></p>
+        `;
+
+            // Save workout to sessionStorage when clicked
+            div.addEventListener("click", () => {
+              sessionStorage.setItem(
+                "selectedWorkout",
+                JSON.stringify({
+                  day: w.day,
+                  name: w.name,
+                  time: w.time,
+                  encouragement: w.encouragement,
+                  details: w.details || "", // ✅ carry forward workout details
+                })
+              );
+              window.location.href = "session.html";
+            });
+
+            container.appendChild(div);
+          });
+        }
+      });
+
+      const currentUser = JSON.parse(
+        localStorage.getItem("currentUser") || "null"
+      );
+
+      if (!currentUser) {
+        // Not logged in, send to login page
+        window.location.href = "login.html";
+      }
+
+      // If on admin page, make sure only your email can see it
+      if (
+        window.location.pathname.endsWith("admin.html") &&
+        !currentUser.isAdmin
+      ) {
+        alert("Access denied!");
+        window.location.href = "index.html";
+      }
+    </script>
+  </body>
+</html>

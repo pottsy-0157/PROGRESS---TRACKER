@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>My Profile</title>
+    <style>
+      /* Box sizing and remove iOS tap highlight */
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent; /* iOS Safari fix */
+      }
+
+      body {
+        font-family: "Poppins", Arial, sans-serif;
+        background: linear-gradient(145deg, #0e0e0e, #1c1c1c);
+        color: #fff;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100dvh; /* full dynamic viewport height */
+        padding-bottom: env(
+          safe-area-inset-bottom
+        ); /* fix bottom white area on iOS */
+      }
+
+      .profile-card {
+        background: #1a1a1a;
+        border-radius: 16px;
+        padding: 2rem;
+        max-width: 420px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        -webkit-transform-style: preserve-3d;
+        -webkit-backface-visibility: hidden;
+      }
+
+      .profile-card:hover {
+        transform: scale(1.02);
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+      }
+
+      .profile-card img {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid gold;
+        margin-bottom: 1rem;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        -webkit-transform-style: preserve-3d;
+        -webkit-backface-visibility: hidden;
+      }
+
+      .profile-card img:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 25px rgba(255, 215, 0, 0.7);
+      }
+
+      h1 {
+        margin: 0.5rem 0;
+        font-size: 1.8rem;
+        color: gold;
+      }
+
+      .profile-info {
+        text-align: left;
+        margin-top: 1.5rem;
+        font-size: 0.95rem;
+      }
+
+      .profile-info p {
+        margin: 0.6rem 0;
+        line-height: 1.5;
+      }
+
+      .profile-info strong {
+        color: gold;
+        font-weight: 600;
+      }
+
+      button {
+        margin-top: 2rem;
+        padding: 0.8rem 1.8rem;
+        cursor: pointer;
+        border: none;
+        border-radius: 8px;
+        background: gold;
+        color: #111;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: background 0.25s, transform 0.2s ease;
+      }
+
+      button:hover {
+        background: darkorange;
+        transform: scale(1.05);
+      }
+
+      /* Mobile adjustments */
+      @media (max-width: 500px) {
+        .profile-card {
+          padding: 1.5rem;
+          max-width: 95%;
+          box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+          font-size: 1.5rem;
+        }
+
+        .profile-card img {
+          box-shadow: 0 0 15px rgba(255, 215, 0, 0.3); /* subtle glow */
+          border: 2px solid gold;
+        }
+
+        /* Disable hover effects on mobile to prevent flicker */
+        .profile-card:hover {
+          transform: none;
+          box-shadow: 0 6px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .profile-card img:hover {
+          transform: none;
+          box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="profile-card">
+      <img
+        id="profilePic"
+        src="https://via.placeholder.com/120"
+        alt="Profile Picture"
+      />
+      <h1 id="userName">User Name</h1>
+      <div class="profile-info">
+        <p><strong>Email:</strong> <span id="userEmail"></span></p>
+        <p><strong>Status:</strong> <span id="userStatus"></span></p>
+        <p><strong>Member Since:</strong> <span id="memberSince"></span></p>
+        <p>
+          <strong>Bio:</strong>
+          <span id="userBio">This is a short bio about the user.</span>
+        </p>
+      </div>
+      <button id="logoutBtn">Logout</button>
+    </div>
+
+    <script>
+      // Load current user
+      const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+
+      if (!currentUser) {
+        window.location.href = "login.html";
+      } else {
+        document.getElementById("userEmail").textContent = currentUser.email;
+        document.getElementById("userStatus").textContent =
+          currentUser.email === "myemail@example.com" ? "Admin" : "User";
+        document.getElementById("userName").textContent =
+          currentUser.name || "User Name";
+        document.getElementById("memberSince").textContent =
+          currentUser.joinDate || "N/A";
+        document.getElementById("userBio").textContent =
+          currentUser.bio || "No bio available.";
+        document.getElementById("profilePic").src =
+          currentUser.photoURL || "ed0eb2a0-3f3c-4f0d-9f6d-8f7e9c6c8e1b.png";
+      }
+
+      // Logout
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        localStorage.removeItem("currentUser");
+        window.location.href = "login.html";
+      });
+
+      // Prevent pinch zoom and double-tap zoom on iOS Safari
+      document.addEventListener(
+        "touchstart",
+        function (e) {
+          if (e.touches.length > 1) e.preventDefault();
+        },
+        { passive: false }
+      );
+
+      let lastTouchEnd = 0;
+      document.addEventListener(
+        "touchend",
+        function (e) {
+          const now = new Date().getTime();
+          if (now - lastTouchEnd <= 300) e.preventDefault();
+          lastTouchEnd = now;
+        },
+        { passive: false }
+      );
+    </script>
+  </body>
+</html>

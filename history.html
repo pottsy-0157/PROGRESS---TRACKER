@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Past Workouts — elev8</title>
+    <style>
+      :root {
+        --bg: #0f0f10;
+        --panel: #0b0b0c;
+        --text: #ffffff;
+        --muted: #9c9c9c;
+        --accent: #c7ff00;
+        --outline: #2a2a2c;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Inter", sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        background: var(--panel);
+      }
+      header button {
+        background: none;
+        border: none;
+        color: var(--accent);
+        font-size: 1.5rem;
+        cursor: pointer;
+      }
+      .container {
+        padding: 1.5rem;
+      }
+      h1 {
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+        font-weight: 700;
+      }
+      .workout-card {
+        background: var(--panel);
+        border-radius: 14px;
+        padding: 1.2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      }
+      .workout-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+      }
+      .workout-header h2 {
+        font-size: 1.2rem;
+        margin: 0;
+      }
+      .workout-meta {
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+      .workout-details {
+        margin-top: 1rem;
+        display: none;
+      }
+      .exercise-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .exercise-row:last-child {
+        border-bottom: none;
+      }
+      .exercise-name {
+        font-weight: 600;
+      }
+      .exercise-weight {
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .duration {
+        margin-top: 0.8rem;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      .delete-btn {
+        background: red;
+        color: #fff;
+        border: none;
+        padding: 0.4rem 0.7rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.8rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <button onclick="window.history.back()">← Back</button>
+    </header>
+    <div class="container">
+      <h1>Past Workouts</h1>
+      <div id="workoutsContainer"></div>
+    </div>
+
+    <script>
+      const workoutsContainer = document.getElementById("workoutsContainer");
+
+      // Load all past workouts
+      const pastWorkouts = JSON.parse(
+        localStorage.getItem("completedWorkouts") || "[]"
+      );
+
+      function formatDuration(seconds) {
+        const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
+        const secs = String(seconds % 60).padStart(2, "0");
+        return `${mins}:${secs}`;
+      }
+
+      function renderWorkouts() {
+        workoutsContainer.innerHTML = "";
+        if (!pastWorkouts.length) {
+          workoutsContainer.innerHTML = "<p>No past workouts yet.</p>";
+          return;
+        }
+
+        pastWorkouts.forEach((w, idx) => {
+          const card = document.createElement("div");
+          card.className = "workout-card";
+
+          const header = document.createElement("div");
+          header.className = "workout-header";
+          header.innerHTML = `
+            <h2>${w.name} (${w.day})</h2>
+            <span class="workout-meta">${new Date(
+              w.date
+            ).toLocaleString()}</span>
+          `;
+
+          const details = document.createElement("div");
+          details.className = "workout-details";
+
+          w.exercises.forEach((ex) => {
+            const exRow = document.createElement("div");
+            exRow.className = "exercise-row";
+            exRow.innerHTML = `
+              <span class="exercise-name">${ex.name}</span>
+              <span class="exercise-weight">${ex.weight || "-"}</span>
+            `;
+            details.appendChild(exRow);
+          });
+
+          const duration = document.createElement("div");
+          duration.className = "duration";
+          duration.textContent = `Duration: ${formatDuration(w.duration || 0)}`;
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.className = "delete-btn";
+          deleteBtn.textContent = "Delete";
+          deleteBtn.addEventListener("click", () => {
+            if (confirm("Delete this workout?")) {
+              pastWorkouts.splice(idx, 1);
+              localStorage.setItem(
+                "completedWorkouts",
+                JSON.stringify(pastWorkouts)
+              );
+              renderWorkouts();
+            }
+          });
+
+          details.appendChild(duration);
+          details.appendChild(deleteBtn);
+
+          header.addEventListener("click", () => {
+            details.style.display =
+              details.style.display === "block" ? "none" : "block";
+          });
+
+          card.appendChild(header);
+          card.appendChild(details);
+          workoutsContainer.appendChild(card);
+        });
+      }
+
+      renderWorkouts();
+    </script>
+  </body>
+</html>

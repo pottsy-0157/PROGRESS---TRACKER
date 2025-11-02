@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Account</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="script.js"></script>
+  </head>
+  <body>
+    <div class="account-page">
+      <div class="account-header">
+        <h1>My Workouts</h1>
+        <div class="account-actions">
+          <a href="WORKOUTS.html" class="account-link">Browse Workouts</a>
+          <button id="logoutBtn" class="auth-btn danger">Logout</button>
+        </div>
+      </div>
+
+      <section class="tracker">
+        <div class="tracker-header">
+          <h2>Progress Tracker</h2>
+          <div class="tracker-stats">
+            <span id="statMonthCount">0</span> this month
+          </div>
+        </div>
+        <form id="logForm" class="tracker-form" autocomplete="off">
+          <input id="logDate" type="date" required />
+          <input
+            id="logTitle"
+            type="text"
+            placeholder="Workout name"
+            required
+          />
+          <input
+            id="logMetric"
+            type="text"
+            placeholder="Metric (e.g. 5km 24:10 / PB)"
+          />
+          <button type="submit" class="auth-btn">Log Session</button>
+        </form>
+
+        <div id="logMessage" class="auth-message"></div>
+
+        <div id="logsEmpty" class="logs-empty" style="display: none">
+          No logs yet. Log your first session above.
+        </div>
+
+        <div class="logs-table-wrap">
+          <table class="logs-table" id="logsTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Workout</th>
+                <th>Metric</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="logsTbody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

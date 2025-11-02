@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Login</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        background: #0f0f0f;
+        color: #fff;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .auth-card {
+        background: #1c1c1c;
+        padding: 2rem;
+        border-radius: 14px;
+        width: 90%;
+        max-width: 360px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        text-align: center;
+      }
+      h1 {
+        margin-bottom: 0.5rem;
+      }
+      .auth-sub {
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+        color: #aaa;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      input {
+        padding: 0.8rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        outline: none;
+        background: #2a2a2a;
+        color: #fff;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .password-wrapper {
+        position: relative;
+      }
+      .password-wrapper input {
+        padding-right: 2.5rem;
+      }
+      .eye-btn {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #ccc;
+        font-size: 1.2rem;
+        line-height: 1;
+        padding: 0;
+      }
+      .eye-btn:focus {
+        outline: none;
+      }
+      .remember-me {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #ccc;
+        font-size: 0.9rem;
+        margin-top: 0.2rem;
+      }
+      .remember-me input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: #ffd700;
+      }
+      .auth-btn {
+        padding: 0.9rem;
+        border: none;
+        border-radius: 8px;
+        background: #ffd700;
+        color: #111;
+        font-weight: bold;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+      .auth-btn:hover {
+        background: #e6c200;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="auth-card">
+      <h1>Sign in</h1>
+      <p class="auth-sub">Use your email to access workouts and progress.</p>
+
+      <form id="loginForm" novalidate>
+        <input type="email" id="authEmail" placeholder="Email" required />
+        <div class="password-wrapper">
+          <input
+            type="password"
+            id="authPassword"
+            placeholder="Password"
+            required
+          />
+          <button type="button" id="togglePassword" class="eye-btn">👁</button>
+        </div>
+
+        <label class="remember-me">
+          <input type="checkbox" id="rememberMe" /> Remember me
+        </label>
+
+        <button type="submit" class="auth-btn">Login / Sign Up</button>
+      </form>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const ADMIN_EMAIL = "Lewispotts0310@gmail.com";
+        const ADMIN_PASSWORD = "Lewis-01570";
+
+        const getUsers = () =>
+          JSON.parse(localStorage.getItem("users") || "{}");
+        const saveUsers = (users) =>
+          localStorage.setItem("users", JSON.stringify(users));
+
+        // Ensure admin is always correct
+        let users = getUsers();
+        users[ADMIN_EMAIL] = {
+          uid: "uid_admin",
+          email: ADMIN_EMAIL,
+          password: ADMIN_PASSWORD,
+          totalWorkouts: 0,
+          currentWorkout: "-",
+          totalMinutes: 0,
+        };
+        saveUsers(users);
+
+        const loginForm = document.getElementById("loginForm");
+        const passwordInput = document.getElementById("authPassword");
+        const togglePassword = document.getElementById("togglePassword");
+
+        loginForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+
+          const email = document.getElementById("authEmail").value.trim();
+          const password = passwordInput.value.trim();
+          const rememberMe = document.getElementById("rememberMe").checked;
+
+          if (!email || !password) {
+            alert("Enter both email and password!");
+            return;
+          }
+
+          users = getUsers();
+
+          if (!users[email]) {
+            // Create normal user
+            users[email] = {
+              uid: "uid_" + Date.now(),
+              email,
+              password,
+              totalWorkouts: 0,
+              currentWorkout: "-",
+              totalMinutes: 0,
+            };
+          } else if (users[email].password !== password) {
+            alert("Wrong password!");
+            return;
+          }
+
+          saveUsers(users);
+          localStorage.setItem("currentUser", JSON.stringify(users[email]));
+
+          if (rememberMe) localStorage.setItem("rememberEmail", email);
+          else localStorage.removeItem("rememberEmail");
+
+          // Redirect
+          if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase())
+            window.location.href = "admin.html";
+          else window.location.href = "index.html";
+        });
+
+        togglePassword.addEventListener("click", () => {
+          passwordInput.type = "text";
+          togglePassword.style.color = "#ffd700";
+          setTimeout(() => {
+            passwordInput.type = "password";
+            togglePassword.style.color = "#ccc";
+          }, 5000);
+        });
+
+        const remembered = localStorage.getItem("rememberEmail");
+        if (remembered) {
+          document.getElementById("authEmail").value = remembered;
+          document.getElementById("rememberMe").checked = true;
+        }
+      });
+    </script>
+  </body>
+</html>

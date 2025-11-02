@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Session — elev8</title>
+    <style>
+      :root {
+        --bg: #0f0f10;
+        --panel: #0b0b0c;
+        --text: #ffffff;
+        --muted: #9c9c9c;
+        --accent: #c7ff00;
+        --outline: #2a2a2c;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Inter", sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+      }
+      header button {
+        background: none;
+        border: none;
+        color: var(--muted);
+        font-size: 1.4rem;
+        cursor: pointer;
+      }
+      .container {
+        padding: 0 1.5rem 3rem;
+      }
+      .title {
+        font-size: 1.9rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        margin-top: 0.5rem;
+        line-height: 1.2;
+      }
+      .meta {
+        display: flex;
+        align-items: center;
+        gap: 1.2rem;
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin: 0.5rem 0 1.5rem;
+      }
+      .desc {
+        color: var(--muted);
+        font-size: 1rem;
+        margin-bottom: 2rem;
+      }
+      .start-btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+        padding: 1.1rem;
+        background-color: var(--accent);
+        color: black;
+        font-weight: 700;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+      .panel {
+        background-color: var(--panel);
+        border-radius: 14px;
+        margin-top: 2rem;
+        padding: 1.2rem;
+      }
+      .panel h2 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+      }
+      .exercise {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.8rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .exercise:last-child {
+        border-bottom: none;
+      }
+      .exercise-left {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+      }
+      .exercise-num {
+        font-weight: 800;
+        color: var(--accent);
+      }
+      .exercise-name {
+        font-weight: 600;
+        font-size: 1rem;
+      }
+      .exercise-right {
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      .workout-screen {
+        display: none;
+      }
+      .exercise-box {
+        background-color: var(--panel);
+        border-radius: 14px;
+        padding: 1.6rem;
+        margin-bottom: 5.5rem;
+      }
+      .set-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        background: #111;
+        border-radius: 12px;
+        padding: 0.9rem;
+      }
+      .set-row span {
+        font-weight: 500;
+        width: 60px;
+      }
+      .input-box {
+        width: 70px;
+        text-align: center;
+        background: #000;
+        border: 1px solid var(--outline);
+        border-radius: 8px;
+        color: var(--text);
+        font-weight: 600;
+        padding: 0.3rem;
+        outline: none;
+        font-size: 1rem;
+      }
+      .input-box:focus {
+        border-color: var(--accent);
+      }
+      .check-btn {
+        width: 30px;
+        height: 30px;
+        border: 1.8px solid var(--accent);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1.1rem;
+        transition: 0.2s;
+      }
+      .check-btn.done {
+        background: var(--accent);
+        color: #000;
+        box-shadow: 0 0 8px var(--accent);
+      }
+      .footer-info {
+        margin-top: 0.8rem;
+        color: var(--muted);
+        font-size: 0.85rem;
+        border-top: 1px solid var(--outline);
+        padding-top: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      #historyModal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        justify-content: center;
+        align-items: center;
+      }
+      #historyModal .modal-content {
+        background: #222;
+        padding: 1.5rem;
+        border-radius: 12px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80%;
+        overflow-y: auto;
+      }
+      #historyModal table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      #historyModal th,
+      #historyModal td {
+        padding: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        text-align: left;
+      }
+      #closeHistory {
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        background: var(--accent);
+        border: none;
+        color: black;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      @media (max-width: 500px) {
+        .set-row {
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- SCREEN 1 -->
+    <div id="sessionScreen">
+      <header><button onclick="window.history.back()">←</button></header>
+      <div class="container">
+        <h1 class="title" id="sessionTitle">Loading...</h1>
+        <div class="meta" id="sessionMeta"></div>
+        <p class="desc" id="sessionDesc"></p>
+        <button class="start-btn" id="startWorkoutBtn">▶ Start Workout</button>
+        <div class="panel">
+          <h2>Workout Overview</h2>
+          <div id="exerciseList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 2 -->
+    <div id="workoutScreen" class="workout-screen">
+      <header><button id="backBtn">←</button></header>
+      <div class="container">
+        <h1 class="title" id="workoutTitle">Workout</h1>
+        <p style="color: var(--muted); font-size: 1rem; margin-bottom: 1rem">
+          Timer: <span id="workoutTimer">00:00</span>
+        </p>
+        <div id="exercisesContainer"></div>
+        <button
+          id="finishBtn"
+          class="start-btn"
+          style="flex: 1; background: #c7ff00"
+        >
+          Finish workout
+        </button>
+      </div>
+    </div>
+
+    <!-- HISTORY MODAL -->
+    <div id="historyModal">
+      <div class="modal-content">
+        <h2 id="historyTitle">History</h2>
+        <table id="historyTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Workout</th>
+              <th>Weight</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <button id="closeHistory">Close</button>
+      </div>
+    </div>
+
+    <script>
+      const sessionScreen = document.getElementById("sessionScreen");
+      const workoutScreen = document.getElementById("workoutScreen");
+      const startBtn = document.getElementById("startWorkoutBtn");
+      const backBtn = document.getElementById("backBtn");
+      const exerciseList = document.getElementById("exerciseList");
+      const exercisesContainer = document.getElementById("exercisesContainer");
+      const timerDisplay = document.getElementById("workoutTimer");
+      const finishBtn = document.getElementById("finishBtn");
+      const historyModal = document.getElementById("historyModal");
+      const historyTableBody = document.querySelector("#historyTable tbody");
+      const historyTitle = document.getElementById("historyTitle");
+      const closeHistory = document.getElementById("closeHistory");
+
+      let workout = JSON.parse(
+        sessionStorage.getItem("selectedWorkout") || "{}"
+      );
+      if (!workout.details) {
+        alert("No workout selected!");
+        window.location.href = "workouts.html";
+      }
+
+      document.getElementById("sessionTitle").textContent =
+        workout.name || "Workout Session";
+      document.getElementById("sessionMeta").textContent = `${
+        workout.day || ""
+      } • ${workout.time || ""}`;
+      document.getElementById("sessionDesc").textContent =
+        workout.encouragement || "";
+
+      const exerciseLines = workout.details.split("\n").filter((l) => l.trim());
+      exerciseList.innerHTML = "";
+      exerciseLines.forEach((line, i) => {
+        const exerciseDiv = document.createElement("div");
+        exerciseDiv.className = "exercise";
+        exerciseDiv.innerHTML = `
+    <div class="exercise-left">
+      <span class="exercise-num">${String(i + 1).padStart(2, "0")}</span>
+      <span class="exercise-name">${line}</span>
+    </div>
+    <div class="exercise-right">—</div>
+  `;
+        exerciseList.appendChild(exerciseDiv);
+      });
+
+      // --- SUGGESTED WEIGHT ---
+      function getSuggestedWeight(exerciseName) {
+        const completedWorkouts = JSON.parse(
+          localStorage.getItem("completedWorkouts") || "[]"
+        );
+        for (let i = completedWorkouts.length - 1; i >= 0; i--) {
+          const ex = completedWorkouts[i].exercises.find(
+            (e) => e.name === exerciseName
+          );
+          if (ex && ex.weight) return ex.weight;
+        }
+        return "";
+      }
+
+      // TIMER
+      let timerInterval;
+      let startTime =
+        parseInt(localStorage.getItem("workoutStartTime")) ||
+        Date.now() -
+          (parseInt(localStorage.getItem("workoutSeconds")) || 0) * 1000;
+      function startTimer() {
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+          const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+          localStorage.setItem("workoutSeconds", elapsedSec);
+          const mins = String(Math.floor(elapsedSec / 60)).padStart(2, "0");
+          const secs = String(elapsedSec % 60).padStart(2, "0");
+          timerDisplay.textContent = `${mins}:${secs}`;
+        }, 1000);
+      }
+
+      function loadWorkout() {
+        exercisesContainer.innerHTML = "";
+        exerciseLines.forEach((line, exIndex) => {
+          let sets = 3;
+          let saved = JSON.parse(
+            localStorage.getItem(
+              "currentWorkout_" + workout.name + "_" + exIndex
+            ) || "{}"
+          );
+          const box = document.createElement("div");
+          box.className = "exercise-box";
+          box.innerHTML = `<h3>${line}</h3>`;
+
+          for (let i = 1; i <= sets; i++) {
+            const suggested = getSuggestedWeight(line);
+            const setDiv = document.createElement("div");
+            setDiv.className = "set-row";
+            setDiv.innerHTML = `
+        <span>Set ${i}</span>
+        <input type="number" class="input-box" placeholder="kg" value="${
+          saved[`weight_${i}`] || suggested
+        }" data-field="weight_${i}">
+        <input type="number" class="input-box" placeholder="reps" value="${
+          saved[`reps_${i}`] || ""
+        }" data-field="reps_${i}">
+        <button class="check-btn ${saved[`done_${i}`] ? "done" : ""}">✓</button>
+      `;
+            box.appendChild(setDiv);
+          }
+
+          const footer = document.createElement("div");
+          footer.className = "footer-info";
+          footer.innerHTML = `<span>Suggested weight based on history</span><span style="color: var(--accent); cursor:pointer;">View History</span>`;
+          box.appendChild(footer);
+
+          exercisesContainer.appendChild(box);
+
+          const inputs = box.querySelectorAll(".input-box");
+          const buttons = box.querySelectorAll(".check-btn");
+          const viewHistoryBtn = footer.querySelector("span:last-child");
+
+          inputs.forEach((input) =>
+            input.addEventListener("input", () => saveExercise(exIndex, box))
+          );
+          buttons.forEach((btn, i) =>
+            btn.addEventListener("click", () => {
+              btn.classList.toggle("done");
+              saveExercise(exIndex, box);
+            })
+          );
+
+          viewHistoryBtn.addEventListener("click", () => {
+            showHistory(line);
+          });
+        });
+        localStorage.setItem("workoutStartTime", startTime);
+        startTimer();
+      }
+
+      function saveExercise(exIndex, box) {
+        const data = {};
+        box
+          .querySelectorAll(".input-box")
+          .forEach((input) => (data[input.dataset.field] = input.value));
+        box
+          .querySelectorAll(".check-btn")
+          .forEach(
+            (btn, i) => (data[`done_${i + 1}`] = btn.classList.contains("done"))
+          );
+        localStorage.setItem(
+          "currentWorkout_" + workout.name + "_" + exIndex,
+          JSON.stringify(data)
+        );
+      }
+
+      function showHistory(exerciseName) {
+        historyTitle.textContent = `History for: ${exerciseName}`;
+        historyTableBody.innerHTML = "";
+        const completedWorkouts = JSON.parse(
+          localStorage.getItem("completedWorkouts") || "[]"
+        );
+        completedWorkouts.reverse().forEach((w) => {
+          const ex = w.exercises.find((e) => e.name === exerciseName);
+          if (ex) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td>${new Date(
+              w.date
+            ).toLocaleDateString()}</td><td>${w.name}</td><td>${
+              ex.weight
+            }</td>`;
+            historyTableBody.appendChild(tr);
+          }
+        });
+        historyModal.style.display = "flex";
+      }
+
+      closeHistory.addEventListener("click", () => {
+        historyModal.style.display = "none";
+      });
+
+      // BUTTONS
+      startBtn.addEventListener("click", () => {
+        sessionScreen.style.display = "none";
+        workoutScreen.style.display = "block";
+        loadWorkout();
+      });
+
+      backBtn.addEventListener("click", () => {
+        workoutScreen.style.display = "none";
+        sessionScreen.style.display = "block";
+      });
+
+      finishBtn.addEventListener("click", () => {
+        const completedWorkout = {
+          name: workout.name,
+          day: workout.day,
+          time: workout.time,
+          encouragement: workout.encouragement,
+          date: new Date().toISOString(),
+          duration: parseInt(localStorage.getItem("workoutSeconds")) || 0,
+          exercises: [],
+        };
+
+        exerciseLines.forEach((line, exIndex) => {
+          const box = exercisesContainer.children[exIndex];
+          const weightInputs = box.querySelectorAll(
+            'input[data-field^="weight_"]'
+          );
+          const weight = weightInputs.length > 0 ? weightInputs[0].value : "";
+          completedWorkout.exercises.push({ name: line, weight });
+          localStorage.removeItem(
+            "currentWorkout_" + workout.name + "_" + exIndex
+          );
+        });
+
+        const allCompleted = JSON.parse(
+          localStorage.getItem("completedWorkouts") || "[]"
+        );
+        allCompleted.push(completedWorkout);
+        localStorage.setItem("completedWorkouts", JSON.stringify(allCompleted));
+
+        clearInterval(timerInterval);
+        localStorage.removeItem("workoutSeconds");
+        localStorage.removeItem("workoutStartTime");
+
+        workoutScreen.style.display = "none";
+        sessionScreen.style.display = "block";
+      });
+
+      // Auto resume
+      const anySaved = exerciseLines.some((_, i) =>
+        localStorage.getItem("currentWorkout_" + workout.name + "_" + i)
+      );
+      if (anySaved) {
+        sessionScreen.style.display = "none";
+        workoutScreen.style.display = "block";
+        loadWorkout();
+      }
+    </script>
+  </body>
+</html>
