@@ -28,13 +28,11 @@
     <br />
     <br />
 
-    <!-- View Toggle -->
     <div class="view-toggle">
       <button class="view-btn active" id="graphViewBtn">Graph View</button>
       <button class="view-btn" id="calendarViewBtn">Calendar View</button>
     </div>
 
-    <!-- Hide Button -->
     <div class="hide-toggle">
       <button class="hide-btn" id="hideViewBtn">Hide View</button>
     </div>
@@ -47,11 +45,13 @@
         <button class="tracker-btn" data-type="row">Row</button>
         <button class="tracker-btn" data-type="weights">Weights</button>
       </div>
-      <div class="chart-scroll" id="chartScroll">
+
+      <div class="chart-scroll">
         <div class="chart-wrapper">
           <canvas id="progressChart"></canvas>
         </div>
       </div>
+
       <form id="logForm" class="log-form">
         <input
           type="number"
@@ -85,21 +85,17 @@
       <section class="schedule" id="schedule">
         <h2>Calendar / Schedule</h2>
         <p class="schedule-sub">
-          Weekly planner of workouts. Reminders for booked sessions.
+          Weekly planner of workouts. Logged workouts are marked below.
         </p>
         <div class="week-controls">
-          <button id="prevWeek" class="week-btn" aria-label="Previous week">
-            ←
-          </button>
+          <button id="prevWeek" class="week-btn">←</button>
           <div id="weekLabel" class="week-label"></div>
-          <button id="nextWeek" class="week-btn" aria-label="Next week">
-            →
-          </button>
+          <button id="nextWeek" class="week-btn">→</button>
         </div>
         <div id="weekGrid" class="week-grid"></div>
-        <div id="reminderToast" class="reminder-toast" aria-live="polite"></div>
       </section>
     </div>
+
     <br />
     <br />
     <br />
@@ -111,8 +107,6 @@
     <div id="workoutsContainer"></div>
 
     <script>
-     
-
       // Load workouts from localStorage or use defaults
       let workouts = JSON.parse(localStorage.getItem("workouts") || "null");
       if (!workouts) {
@@ -174,10 +168,420 @@
           });
         }
       });
-
-
     </script>
+
+    <script>
+      // --- GRAPH + CALENDAR INTEGRATION ---
+
+      const logForm = document.getElementById("logForm");
+      const workoutValue = document.getElementById("workoutValue");
+      const workoutDistance = document.getElementById("workoutDistance");
+      const progressChart = document.getElementById("progressChart");
+      const paceSummary = document.getElementById("paceSummary");
+      const weekGrid = document.getElementById("weekGrid");
+      const weekLabel = document.getElementById("weekLabel");
+
+      let currentType = "run";
+      let chart;
+      let logs = JSON.parse(localStorage.getItem("weekLogs")) || [];
+
+      // --- Graph setup ---
+      function updateChart() {
+        const filtered = logs.filter((l) => l.type === currentType);
+        const labels = filtered.map((l) =>
+          new Date(l.date).toLocaleDateString()
+        );
+        const values = filtered.map((l) => l.value);
+
+        if (chart) chart.destroy();
+        chart = new Chart(progressChart, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: currentType.toUpperCase(),
+                data: values,
+                borderWidth: 2,
+                borderColor: "#00e676",
+                tension: 0.3,
+              },
+            ],
+          },
+          options: {
+            scales: {
+              y: { beginAtZero: true },
+            },
+          },
+        });
+      }
+
+      // --- Log form handler ---
+      logForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const value = parseFloat(workoutValue.value);
+        const distance = parseFloat(workoutDistance.value);
+        if (!value) return alert("Enter a valid value!");
+
+        const entry = {
+          type: currentType,
+          value,
+          distance: distance || null,
+          date: new Date().toISOString(),
+        };
+
+        logs.push(entry);
+        localStorage.setItem("weekLogs", JSON.stringify(logs));
+
+        workoutValue.value = "";
+        workoutDistance.value = "";
+        updateChart();
+        updateCalendar();
+      });
+
+      // --- Calendar setup ---
+      function generateWeek() {
+        const now = new Date();
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - now.getDay() + 1); // Monday
+        weekLabel.textContent = `Week of ${weekStart.toLocaleDateString()}`;
+
+        weekGrid.innerHTML = "";
+        for (let i = 0; i < 7; i++) {
+          const day = new Date(weekStart);
+          day.setDate(weekStart.getDate() + i);
+
+          const cell = document.createElement("div");
+          cell.className = "day-cell";
+          cell.dataset.date = day.toDateString();
+          cell.innerHTML = `
+      <div class="day-name">${day.toLocaleDateString("en-GB", {
+        weekday: "short",
+      })}</div>
+      <div class="day-content"></div>
+    `;
+          weekGrid.appendChild(cell);
+        }
+      }
+
+      // --- Update calendar with logs ---
+      function updateCalendar() {
+        const cells = document.querySelectorAll(".day-cell");
+        cells.forEach((cell) => {
+          const content = cell.querySelector(".day-content");
+          content.innerHTML = "";
+
+          const dayLogs = logs.filter(
+            (l) =>
+              new Date(l.date).toDateString() ===
+              new Date(cell.dataset.date).toDateString()
+          );
+
+          dayLogs.forEach((l) => {
+            const div = document.createElement("div");
+            div.className = "log-entry";
+            div.textContent = `${l.type}: ${l.value}${
+              l.type === "weights" ? "kg" : ""
+            }`;
+            content.appendChild(div);
+          });
+        });
+      }
+
+      // --- Tracker buttons ---
+      document.querySelectorAll(".tracker-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document
+            .querySelectorAll(".tracker-btn")
+            .forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          currentType = btn.dataset.type;
+          updateChart();
+        });
+      });
+
+      // --- Init ---
+      generateWeek();
+      updateChart();
+      updateCalendar();
+    </script>
+    <script>
+      /*
+  Unified Graph + Calendar script
+  - Keeps Chart.js graph + log form working
+  - Shows admin sessions (from localStorage 'workouts') on the weekly calendar
+  - Supports prev/next week navigation
+  - Undo last log
+  - Non-destructive: safe if any DOM pieces are absent
+*/
+
+      (function () {
+        // Elements (guarded)
+        const logForm = document.getElementById("logForm");
+        const workoutValue = document.getElementById("workoutValue");
+        const workoutDistance = document.getElementById("workoutDistance");
+        const progressChart = document.getElementById("progressChart");
+        const paceSummary = document.getElementById("paceSummary");
+        const weekGrid = document.getElementById("weekGrid");
+        const weekLabel = document.getElementById("weekLabel");
+        const prevWeekBtn = document.getElementById("prevWeek");
+        const nextWeekBtn = document.getElementById("nextWeek");
+        const undoBtn = document.getElementById("undoBtn");
+
+        // State
+        let currentType = "run";
+        let chart = null;
+        let logs = JSON.parse(localStorage.getItem("weekLogs") || "[]"); // user logs
+        let workouts = JSON.parse(localStorage.getItem("workouts") || "[]"); // admin sessions
+        let weekStart = startOfWeek(new Date()); // Monday of current shown week
+
+        // Utils
+        function startOfWeek(d) {
+          const date = new Date(d);
+          // get Monday as start
+          const day = date.getDay(); // 0..6 (Sun..Sat)
+          const diff = day === 0 ? -6 : 1 - day; // if Sunday (0) go back 6 days
+          date.setHours(0, 0, 0, 0);
+          date.setDate(date.getDate() + diff);
+          return date;
+        }
+        function formatDayShort(date) {
+          return date.toLocaleDateString("en-GB", { weekday: "short" });
+        }
+        function sameDateStr(a, b) {
+          return new Date(a).toDateString() === new Date(b).toDateString();
+        }
+
+        // --- Chart / tracker ---
+        function buildChart() {
+          if (!progressChart) return;
+          const filtered = logs.filter((l) => l.type === currentType);
+          const labels = filtered.map((l) =>
+            new Date(l.date).toLocaleDateString("en-GB")
+          );
+          const values = filtered.map((l) => l.value);
+
+          if (chart) chart.destroy();
+          const ctx = progressChart.getContext("2d");
+          chart = new Chart(ctx, {
+            type: "line",
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: currentType.toUpperCase(),
+                  data: values,
+                  borderWidth: 2,
+                  // Visuals - Chart.js colors here are okay
+                  borderColor: "#00e676",
+                  tension: 0.25,
+                  fill: true,
+                  backgroundColor: "rgba(0,230,118,0.08)",
+                  pointRadius: 4,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: { beginAtZero: true },
+              },
+            },
+          });
+        }
+
+        // Log form
+        if (logForm) {
+          logForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const value = parseFloat(workoutValue.value);
+            const distance = parseFloat(workoutDistance.value);
+            if (!value || isNaN(value)) {
+              alert("Enter a valid value.");
+              return;
+            }
+            const entry = {
+              type: currentType,
+              value,
+              distance: isNaN(distance) ? null : distance,
+              date: new Date().toISOString(),
+            };
+            logs.push(entry);
+            localStorage.setItem("weekLogs", JSON.stringify(logs));
+
+            // clear & refresh
+            workoutValue.value = "";
+            workoutDistance.value = "";
+            buildChart();
+            renderWeekGrid(); // also update calendar so logs appear on correct day
+          });
+        }
+
+        // Undo last
+        if (undoBtn) {
+          undoBtn.addEventListener("click", () => {
+            if (logs.length === 0) return alert("No entries to undo.");
+            logs.pop();
+            localStorage.setItem("weekLogs", JSON.stringify(logs));
+            buildChart();
+            renderWeekGrid();
+          });
+        }
+
+        // Tracker type buttons
+        document.querySelectorAll(".tracker-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll(".tracker-btn")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            if (btn.dataset && btn.dataset.type) {
+              currentType = btn.dataset.type;
+              buildChart();
+            }
+          });
+        });
+
+        // --- Week generation + calendar render ---
+        function generateWeekCells() {
+          if (!weekGrid || !weekLabel) return;
+          weekGrid.innerHTML = "";
+          const start = new Date(weekStart);
+          const end = new Date(start);
+          end.setDate(start.getDate() + 6);
+          weekLabel.textContent = `Week of ${start.toLocaleDateString(
+            "en-GB"
+          )}`;
+
+          for (let i = 0; i < 7; i++) {
+            const day = new Date(start);
+            day.setDate(start.getDate() + i);
+            const cell = document.createElement("div");
+            cell.className = "day-cell";
+            cell.dataset.iso = day.toISOString();
+            cell.innerHTML = `
+        <div class="day-name">${formatDayShort(day)}</div>
+        <div class="day-date">${day.getDate()}</div>
+        <div class="day-content"></div>
+      `;
+            weekGrid.appendChild(cell);
+          }
+        }
+
+        // Map weekday short -> ADMIN day format
+        const shortToAdmin = {
+          Mon: "MONDAY",
+          Tue: "TUESDAY",
+          Wed: "WEDNESDAY",
+          Thu: "THURSDAY",
+          Fri: "FRIDAY",
+          Sat: "SATURDAY",
+          Sun: "SUNDAY",
+        };
+
+        function renderWeekGrid() {
+          if (!weekGrid) return;
+          // refresh data from storage (incase admin added a workout)
+          workouts = JSON.parse(localStorage.getItem("workouts") || "[]");
+          logs = JSON.parse(localStorage.getItem("weekLogs") || "[]");
+
+          const cells = weekGrid.querySelectorAll(".day-cell");
+          cells.forEach((cell) => {
+            const content = cell.querySelector(".day-content");
+            content.innerHTML = "";
+
+            const cellDateISO = cell.dataset.iso;
+            // 1) show user logs that match this date
+            const dayLogs = logs.filter((l) =>
+              sameDateStr(l.date, cellDateISO)
+            );
+            dayLogs.forEach((l) => {
+              const div = document.createElement("div");
+              div.className = "log-entry";
+              div.style.margin = "4px 0";
+              div.textContent = `${l.type.toUpperCase()}: ${l.value}${
+                l.type === "weights" ? "kg" : ""
+              }`;
+              content.appendChild(div);
+            });
+
+            // 2) show admin sessions for this weekday (name + time) — no exercises
+            const weekdayShort = new Date(cellDateISO).toLocaleDateString(
+              "en-GB",
+              {
+                weekday: "short",
+              }
+            ); // e.g. "Mon"
+            const adminDay = shortToAdmin[weekdayShort];
+            if (adminDay) {
+              const dayWorkouts = workouts.filter((w) => w.day === adminDay);
+              dayWorkouts.forEach((w) => {
+                const div = document.createElement("div");
+                div.className = "admin-session";
+                // style small pill
+                div.style.background = "#e6c200";
+                div.style.color = "#111";
+                div.style.padding = "4px 6px";
+                div.style.borderRadius = "6px";
+                div.style.marginTop = "6px";
+                div.style.fontSize = "0.9rem";
+                div.textContent = `${w.name} — ${w.time}`;
+                // clicking an admin session should open session page (optional)
+                div.style.cursor = "pointer";
+                div.addEventListener("click", () => {
+                  // set selectedWorkout and navigate to session page
+                  sessionStorage.setItem(
+                    "selectedWorkout",
+                    JSON.stringify({
+                      day: w.day,
+                      name: w.name,
+                      time: w.time,
+                      encouragement: w.encouragement,
+                      details: w.details || "",
+                    })
+                  );
+                  window.location.href = "session.html";
+                });
+                content.appendChild(div);
+              });
+            }
+          });
+        }
+
+        // Prev / Next week handlers
+        if (prevWeekBtn) {
+          prevWeekBtn.addEventListener("click", () => {
+            weekStart.setDate(weekStart.getDate() - 7);
+            generateWeekCells();
+            renderWeekGrid();
+          });
+        }
+        if (nextWeekBtn) {
+          nextWeekBtn.addEventListener("click", () => {
+            weekStart.setDate(weekStart.getDate() + 7);
+            generateWeekCells();
+            renderWeekGrid();
+          });
+        }
+
+        // Initial render
+        generateWeekCells();
+        buildChart();
+        renderWeekGrid();
+
+        // Expose small API for debugging (optional)
+        window.__elev8_debug = {
+          refresh: () => {
+            logs = JSON.parse(localStorage.getItem("weekLogs") || "[]");
+            workouts = JSON.parse(localStorage.getItem("workouts") || "[]");
+            buildChart();
+            generateWeekCells();
+            renderWeekGrid();
+          },
+        };
+      })();
+    </script>
+    <script></script>
   </body>
 </html>
-
-
