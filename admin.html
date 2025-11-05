@@ -168,47 +168,14 @@
       </select>
       <label>Details:</label>
 
-      <textarea
-        id="workoutDetails"
-        placeholder="Paste or type workout here..."
-      ></textarea>
-      <div
-        id="emomSetup"
-        style="
-          display: none;
-          margin-top: 10px;
-          padding: 10px;
-          background: #1b1b1b;
-          border-radius: 8px;
-          color: #ccc;
-        "
-      >
-        <h3>EMOM Detected</h3>
-        <p style="margin-bottom: 6px">Setup EMOM details:</p>
-        <input
-          type="text"
-          id="emomExercises"
-          placeholder="Exercises (comma-separated)"
-          style="width: 100%; margin-bottom: 6px; padding: 6px"
-        />
-        <input
-          type="number"
-          id="emomDuration"
-          placeholder="Seconds per round"
-          value="60"
-          style="width: 100%; margin-bottom: 6px; padding: 6px"
-        />
-        <input
-          type="number"
-          id="emomRounds"
-          placeholder="Number of rounds"
-          value="5"
-          style="width: 100%; margin-bottom: 6px; padding: 6px"
-        />
-      </div>
+<textarea
+  id="workoutDetails"
+  placeholder="Type or paste your workout here..."
+  style="width:100%; height:200px; padding:10px; border-radius:8px; background:#111; color:#fff; border:1px solid #333; resize:none; font-family:inherit;"
+></textarea>
 
-      <button id="addBtn">Add Workout</button>
-    </div>
+<button id="addBtn" style="margin-top:15px;">Add Workout</button>
+
 
     <!-- Workouts Table -->
     <div class="dashboard-card">
@@ -467,18 +434,89 @@
         renderHistory(); // 👈 always render on page load
       })();
 
-      // ----- EMOM Detection -----
-      const workoutDetails = document.getElementById("workoutDetails");
-      const emomSetup = document.getElementById("emomSetup");
+const workoutDetails = document.getElementById("workoutDetails");
+const addBtn = document.getElementById("addBtn");
 
-      workoutDetails.addEventListener("input", () => {
-        const text = workoutDetails.value.toLowerCase();
-        if (text.includes("emom")) {
-          emomSetup.style.display = "block";
-        } else {
-          emomSetup.style.display = "none";
-        }
-      });
+let emomInserted = false;
+
+// Detect "EMOM" typed
+workoutDetails.addEventListener("input", () => {
+  const text = workoutDetails.value.toUpperCase();
+
+  if (text.includes("EMOM") && !emomInserted) {
+    // Insert the EMOM template below where EMOM was typed
+    const lines = text.split("\n");
+    const newLines = [];
+
+    for (let line of lines) {
+      newLines.push(line);
+      if (line.toUpperCase().includes("EMOM")) {
+        newLines.push("");
+        newLines.push("— Every Minute On the Minute —");
+        newLines.push("Duration: 60s per round");
+        newLines.push("Rounds: 5");
+        newLines.push("Exercises: Burpees, Push-ups");
+      }
+    }
+
+    workoutDetails.value = newLines.join("\n");
+    emomInserted = true;
+  }
+
+  // Remove the template if EMOM was deleted
+  if (!text.includes("EMOM")) {
+    emomInserted = false;
+  }
+});
+
+// Save workout (basic)
+addBtn.addEventListener("click", () => {
+  const text = workoutDetails.value.trim();
+  if (!text) return alert("Please type a workout first!");
+
+  const workout = {
+    text,
+    timestamp: Date.now(),
+  };
+
+  // Save EMOM details if present
+  if (text.toUpperCase().includes("EMOM")) {
+    const lines = text.split("\n");
+    const emomData = {
+      exercises: [],
+      duration: 60,
+      rounds: 5,
+    };
+
+    for (let line of lines) {
+      if (line.toLowerCase().includes("duration")) {
+        emomData.duration = parseInt(line.replace(/\D/g, "")) || 60;
+      }
+      if (line.toLowerCase().includes("round")) {
+        emomData.rounds = parseInt(line.replace(/\D/g, "")) || 5;
+      }
+      if (line.toLowerCase().includes("exercises")) {
+        emomData.exercises = line
+          .split(":")[1]
+          ?.split(",")
+          .map((x) => x.trim()) || [];
+      }
+    }
+
+    workout.emom = emomData;
+  }
+
+  // Store
+  const all = JSON.parse(localStorage.getItem("workouts") || "[]");
+  all.push(workout);
+  localStorage.setItem("workouts", JSON.stringify(all));
+
+  workoutDetails.value = "";
+  emomInserted = false;
+  
+});
+
+
     </script>
   </body>
 </html>
