@@ -172,6 +172,40 @@
         id="workoutDetails"
         placeholder="Paste or type workout here..."
       ></textarea>
+      <div
+        id="emomSetup"
+        style="
+          display: none;
+          margin-top: 10px;
+          padding: 10px;
+          background: #1b1b1b;
+          border-radius: 8px;
+          color: #ccc;
+        "
+      >
+        <h3>EMOM Detected</h3>
+        <p style="margin-bottom: 6px">Setup EMOM details:</p>
+        <input
+          type="text"
+          id="emomExercises"
+          placeholder="Exercises (comma-separated)"
+          style="width: 100%; margin-bottom: 6px; padding: 6px"
+        />
+        <input
+          type="number"
+          id="emomDuration"
+          placeholder="Seconds per round"
+          value="60"
+          style="width: 100%; margin-bottom: 6px; padding: 6px"
+        />
+        <input
+          type="number"
+          id="emomRounds"
+          placeholder="Number of rounds"
+          value="5"
+          style="width: 100%; margin-bottom: 6px; padding: 6px"
+        />
+      </div>
 
       <button id="addBtn">Add Workout</button>
     </div>
@@ -432,6 +466,19 @@
 
         renderHistory(); // 👈 always render on page load
       })();
+
+      // ----- EMOM Detection -----
+      const workoutDetails = document.getElementById("workoutDetails");
+      const emomSetup = document.getElementById("emomSetup");
+
+      workoutDetails.addEventListener("input", () => {
+        const text = workoutDetails.value.toLowerCase();
+        if (text.includes("emom")) {
+          emomSetup.style.display = "block";
+        } else {
+          emomSetup.style.display = "none";
+        }
+      });
     </script>
   </body>
 </html>
