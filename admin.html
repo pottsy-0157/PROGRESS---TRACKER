@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard - Smart Workout Scheduler</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -17,7 +17,6 @@
       }
       input,
       select,
-      textarea,
       button {
         margin: 0.5rem 0;
         padding: 0.5rem;
@@ -80,54 +79,104 @@
         border-radius: 4px;
         width: auto;
       }
-      #logoutBtn,
-      #mainPageBtn {
-        margin-right: 1rem;
-        margin-bottom: 1rem;
+
+      .textarea-container {
+        position: relative;
+        width: 100%;
       }
-      #detailModal {
-        display: none;
-        position: fixed;
+      #workoutDetails {
+        position: relative;
+        z-index: 2;
+        background: #1a1a1a;
+        color: #fff;
+        width: 100%;
+        min-height: 200px;
+        resize: vertical;
+        line-height: 1.4;
+        padding: 10px;
+        caret-color: gold;
+        font-family: inherit;
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+      }
+      .ghost-overlay {
+        position: absolute;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.85);
-        justify-content: center;
-        align-items: center;
+        right: 0;
+        pointer-events: none;
+        z-index: 1;
+        padding: 10px;
+        line-height: 1.4;
+        font-family: inherit;
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+        font-size: 16px;
+        color: rgba(255, 255, 255, 0.25);
+        user-select: none;
       }
-      #detailModal .modal-content {
+      .template-buttons {
+        display: flex;
+        gap: 8px;
+        margin: 0.5rem 0 1rem;
+        flex-wrap: wrap;
+      }
+      .template-btn {
         background: #222;
-        padding: 1.5rem;
-        border-radius: 12px;
-        max-width: 500px;
-        width: 90%;
-      }
-      #detailModal h3 {
-        margin-top: 0;
-        color: gold;
-      }
-      #closeModal {
-        margin-top: 1rem;
-        padding: 0.5rem 1rem;
-        background: gold;
-        border: none;
-        color: #111;
-        cursor: pointer;
+        color: #aaa;
+        border: 1px dashed #444;
         border-radius: 6px;
+        padding: 6px 10px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: 0.2s;
+      }
+      .template-btn:hover {
+        background: #333;
+        color: gold;
+        border-color: gold;
+      }
+      .template-btn.active {
+        background: gold;
+        color: #111;
+        border: 1px solid gold;
+      }
+
+      .suggestions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: #222;
+        border: 1px solid gold;
+        width: 100%;
+        z-index: 3;
+        max-height: 200px;
+        overflow-y: auto;
+        border-radius: 5px;
+        margin-top: 2px;
+        display: none;
+      }
+      .suggestions div {
+        padding: 5px 10px;
+        cursor: pointer;
+      }
+      .suggestions div:hover {
+        background: gold;
+        color: #111;
       }
     </style>
   </head>
   <body>
     <h1>Admin Dashboard</h1>
 
-    <button id="mainPageBtn" onclick="location.href='workouts.html'">
-      Main Page
-    </button>
+    <button onclick="location.href='workouts.html'">Go to Main Page</button>
 
-    <!-- Add Workout Card -->
     <div class="dashboard-card">
       <h2>Add Workout</h2>
+
       <label>Day:</label>
       <select id="day">
         <option>MONDAY</option>
@@ -138,6 +187,7 @@
         <option>SATURDAY</option>
         <option>SUNDAY</option>
       </select>
+
       <label>Workout Name:</label>
       <select id="name">
         <option>ELEV8 RUN CLUB</option>
@@ -150,12 +200,14 @@
         <option>CONDITIONING</option>
         <option>BIKE ERG</option>
       </select>
+
       <label>Time:</label>
       <select id="time">
         <option>MORNING – BEFORE SCHOOL</option>
         <option>EVENING – AFTER SCHOOL</option>
         <option>ANY TIME – WEEKEND</option>
       </select>
+
       <label>Encouragement:</label>
       <select id="encouragement">
         <option>YOU GOT THIS!</option>
@@ -166,18 +218,44 @@
         <option>CRUSH IT!</option>
         <option>LETS GO!</option>
       </select>
-      <label>Details:</label>
 
-<textarea
-  id="workoutDetails"
-  placeholder="Type or paste your workout here..."
-  style="width:100%; height:200px; padding:10px; border-radius:8px; background:#111; color:#fff; border:1px solid #333; resize:none; font-family:inherit;"
-></textarea>
+      <label>Workout Details:</label>
+      <div class="textarea-container">
+        <div id="ghostText" class="ghost-overlay"></div>
+        <textarea
+          id="workoutDetails"
+          placeholder="Paste or type workout here..."
+        ></textarea>
+        <div id="suggestBox" class="suggestions"></div>
+      </div>
 
-<button id="addBtn" style="margin-top:15px;">Add Workout</button>
+      <div class="template-buttons">
+        <button
+          class="template-btn"
+          data-example="EMOM Example:\nBench Press – 60s, 5 rounds"
+        >
+          EMOM Bench
+        </button>
+        <button
+          class="template-btn"
+          data-example="EMOM Example:\nSquat – 45s, 8 rounds"
+        >
+          EMOM Squat
+        </button>
+        <button
+          class="template-btn"
+          data-example="AMRAP Example:\nPushups – 10 reps\nSquats – 15 reps"
+        >
+          AMRAP Combo
+        </button>
+        <button class="template-btn" id="autoGenerateBtn">
+          Generate Full Workout
+        </button>
+      </div>
 
+      <button id="addBtn">Add Workout</button>
+    </div>
 
-    <!-- Workouts Table -->
     <div class="dashboard-card">
       <h2>Workouts</h2>
       <div class="table-wrapper">
@@ -196,116 +274,222 @@
       </div>
     </div>
 
-    <!-- History Table -->
-    <div class="dashboard-card">
-      <h2>Completed Workouts</h2>
-      <div class="table-wrapper">
-        <table id="historyTable">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Name</th>
-              <th>Day</th>
-              <th>Time</th>
-              <th>Duration</th>
-              <th>Action</th>
-              <th>Remove</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Modal for More Details -->
-    <div id="detailModal">
-      <div class="modal-content">
-        <h3 id="modalWorkoutName">Workout</h3>
-        <div id="modalExercises"></div>
-        <button id="closeModal">Close</button>
-      </div>
-    </div>
     <script>
-      // Split workout into lines
-      const exerciseLines = workout.details.split("\n").filter((l) => l.trim());
+      // Ghost & template
+      const textarea = document.getElementById("workoutDetails");
+      const ghostDiv = document.getElementById("ghostText");
+      const suggestBox = document.getElementById("suggestBox");
+      let ghostText = "";
 
-      // Arrays to hold separate types
-      const strengthExercises = [];
-      const emomBlocks = [];
+      function highlightSyntax(text) {
+        return text
+          .replace(
+            /(EMOM)/gi,
+            '<span style="color:#ffbf00;font-weight:bold;">$1</span>'
+          )
+          .replace(
+            /(AMRAP)/gi,
+            '<span style="color:#ff8000;font-weight:bold;">$1</span>'
+          )
+          .replace(/\b(\d+)\b/g, '<span style="color:#00ffff;">$1</span>');
+      }
 
-      // Parse exercises
-      exerciseLines.forEach((line) => {
-        if (line.toLowerCase().includes("emom")) {
-          // This line is an EMOM block
-          const exercises = line
-            .replace(/emom:/i, "")
-            .split(",")
-            .map((e) => e.trim());
-          emomBlocks.push({
-            exercises,
-            duration: 60, // default seconds per round
-            rounds: 5, // default number of rounds
-          });
-        } else {
-          // Not EMOM, treat as strength
-          strengthExercises.push(line);
+      function updateGhost() {
+        const typed = textarea.value;
+        let display = "";
+        for (let i = 0; i < ghostText.length; i++) {
+          display += typed[i] === ghostText[i] ? "" : ghostText[i];
+        }
+        ghostDiv.innerHTML = highlightSyntax(display);
+      }
+
+      function insertTextAtCursor(text) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        textarea.value =
+          textarea.value.slice(0, start) + text + textarea.value.slice(end);
+        textarea.selectionStart = textarea.selectionEnd = start + text.length;
+        textarea.focus();
+        updateGhost();
+      }
+
+      // Templates
+      document.querySelectorAll(".template-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (btn.id === "autoGenerateBtn") {
+            generateFullWorkout();
+          } else {
+            insertTextAtCursor("\n" + btn.dataset.example + "\n");
+          }
+        });
+      });
+
+      // Full exercise library 200+ (sample subset, can be expanded)
+      const exerciseLibrary = [
+        "Bench Press",
+        "Incline Bench Press",
+        "Decline Bench Press",
+        "Squat",
+        "Front Squat",
+        "Overhead Squat",
+        "Deadlift",
+        "Romanian Deadlift",
+        "Pull-ups",
+        "Chin-ups",
+        "Lat Pulldown",
+        "Barbell Row",
+        "Dumbbell Row",
+        "Pushups",
+        "Dips",
+        "Plank",
+        "Side Plank",
+        "Hanging Leg Raise",
+        "Bicep Curl",
+        "Hammer Curl",
+        "Tricep Extension",
+        "Shoulder Press",
+        "Lateral Raise",
+        "Burpees",
+        "Mountain Climbers",
+        "Jumping Jacks",
+        "High Knees",
+        "Box Jumps",
+        "Rowing",
+        "Bike Erg",
+        "Running",
+        "Sprints",
+        "Lunges",
+        "Walking Lunges",
+        "Glute Bridge",
+        "Hip Thrust",
+        "Leg Press",
+        "Calf Raise",
+        "Farmer's Carry",
+        "Chest Fly",
+        "Arnold Press",
+        "Incline Dumbbell Press",
+        "Cable Crossover",
+        "Goblet Squat",
+        "Sumo Deadlift",
+        "Pull Over",
+        "Kettlebell Swing",
+        "Seated Row",
+        "Front Raise",
+        "Shrugs",
+        "Decline Pushups",
+        "Pistol Squat",
+        "Wall Sit",
+        "Step Ups",
+        "Bear Crawl",
+        "Boxing",
+        "Jump Rope",
+        "Medicine Ball Slam",
+        "Tuck Jumps",
+        "Broad Jumps",
+        "TRX Row",
+        "TRX Pushup",
+      ];
+
+      // Suggestions logic
+      function getExerciseSuggestions(input) {
+        const lastWord = input.split(/\s+/).pop().toLowerCase();
+        if (!lastWord) return [];
+        return exerciseLibrary
+          .filter((ex) => ex.toLowerCase().includes(lastWord))
+          .slice(0, 7);
+      }
+
+      function getAIWorkoutSuggestions(input) {
+        const workouts = JSON.parse(localStorage.getItem("workouts") || "[]");
+        let freqMap = {};
+        workouts.forEach((w) =>
+          w.details.split("\n").forEach((line) => {
+            const clean = line.trim();
+            if (clean.length > 0) freqMap[clean] = (freqMap[clean] || 0) + 1;
+          })
+        );
+        const lastWord = input.split(/\s+/).pop().toLowerCase();
+        let suggestions = Object.keys(freqMap).filter((ex) =>
+          ex.toLowerCase().includes(lastWord)
+        );
+        suggestions.sort((a, b) => freqMap[b] - freqMap[a]);
+        return suggestions.slice(0, 5);
+      }
+
+      textarea.addEventListener("input", () => {
+        updateGhost();
+        const typed = textarea.value;
+        const past = getAIWorkoutSuggestions(typed);
+        const ex = getExerciseSuggestions(typed);
+        const combined = [...new Set([...ex, ...past])].slice(0, 5);
+        if (combined.length === 0) {
+          suggestBox.style.display = "none";
+          return;
+        }
+        suggestBox.innerHTML = combined.map((s) => `<div>${s}</div>`).join("");
+        suggestBox.style.display = "block";
+      });
+
+      suggestBox.addEventListener("click", (e) => {
+        if (e.target.tagName === "DIV") {
+          insertTextAtCursor("\n" + e.target.textContent + "\n");
+          suggestBox.style.display = "none";
         }
       });
 
-      // Now use `strengthExercises` for strength section
-      // and `emomBlocks` for EMOM section
-    </script>
-    <script>
+      // Hide suggestions when clicking outside
+      document.addEventListener("click", (e) => {
+        if (!textarea.contains(e.target) && !suggestBox.contains(e.target)) {
+          suggestBox.style.display = "none";
+        }
+      });
+
+      // Hide on space/enter/escape
+      textarea.addEventListener("keyup", (e) => {
+        if ([" ", "Enter", "Escape"].includes(e.key)) {
+          suggestBox.style.display = "none";
+        }
+      });
+
+      // Generate full workout
+      function generateFullWorkout() {
+        const workouts = JSON.parse(localStorage.getItem("workouts") || "[]");
+        if (workouts.length === 0) {
+          insertTextAtCursor(
+            "EMOM Example:\nPushups – 10 reps\nSquats – 15 reps\nPlank – 60s\n"
+          );
+          return;
+        }
+        let lines = [];
+        workouts.forEach((w) =>
+          w.details.split("\n").forEach((l) => {
+            if (l.trim()) lines.push(l.trim());
+          })
+        );
+        let shuffled = lines.sort(() => 0.5 - Math.random());
+        let newWorkout = shuffled
+          .slice(0, Math.min(6, shuffled.length))
+          .join("\n");
+        insertTextAtCursor("\n" + newWorkout + "\n");
+      }
+
+      // Local storage & table
       (() => {
-        // --- WORKOUTS ---
         let workouts = JSON.parse(localStorage.getItem("workouts") || "[]");
-        const tableBody = document.querySelector("#workoutTable tbody");
-        const workoutDetailsEl = document.getElementById("workoutDetails");
+        const tbody = document.querySelector("#workoutTable tbody");
         const addBtn = document.getElementById("addBtn");
 
-        function cleanWorkout(details) {
-          return details
-            .split("\n")
-            .filter((l) => l.trim())
-            .map((line) => {
-              line = line.trim();
-              let match = line.match(/(\d+)\s*[x*]\s*(\d+)/i);
-              let sets = match ? match[1] : "";
-              let reps = match ? match[2] : "";
-              let weightMatch = line.match(/(\d+)\s*(kg|lb|lbs)/i);
-              let weight = weightMatch ? weightMatch[0] : "";
-              let cleanLine = line
-                .replace(/(\d+\s*[x*]\s*\d+)/i, "")
-                .replace(/(\d+\s*(kg|lb|lbs))/i, "")
-                .trim();
-              if (sets && reps)
-                return (
-                  cleanLine +
-                  " — " +
-                  sets +
-                  " x " +
-                  reps +
-                  (weight ? " @ " + weight : "")
-                );
-              return cleanLine;
-            })
-            .filter((l) => l)
-            .join("\n");
-        }
-
-        function renderWorkouts() {
-          tableBody.innerHTML = "";
+        function render() {
+          tbody.innerHTML = "";
           if (workouts.length === 0) {
-            const tr = document.createElement("tr");
-            tr.innerHTML =
-              '<td colspan="5" style="text-align:center; color:#888;">No workouts yet.</td>';
-            tableBody.appendChild(tr);
+            tbody.innerHTML =
+              '<tr><td colspan="5" style="text-align:center;color:#888;">No workouts yet.</td></tr>';
             return;
           }
           workouts.forEach((w, i) => {
             const tr = document.createElement("tr");
-            tr.innerHTML = `<td>${w.day}</td><td>${w.name}</td><td>${w.time}</td><td>${w.encouragement}</td><td><button class="remove-workout-btn" data-index="${i}">Remove</button></td>`;
-            tableBody.appendChild(tr);
+            tr.innerHTML = `<td>${w.day}</td><td>${w.name}</td><td>${w.time}</td><td>${w.encouragement}</td><td><button data-index="${i}" class="remove-btn">Remove</button></td>`;
+            tbody.appendChild(tr);
           });
         }
 
@@ -316,207 +500,28 @@
           const encouragement = document
             .getElementById("encouragement")
             .value.trim();
-          const details = workoutDetailsEl.value.trim();
-          if (!day || !name || !time || !encouragement)
-            return alert("Fill all fields!");
-          const formattedDetails = cleanWorkout(details);
-          workouts.push({
-            day,
-            name,
-            time,
-            encouragement,
-            details: formattedDetails,
-            type: "Auto",
-          });
+          const details = textarea.value.trim();
+          if (!day || !name || !time || !encouragement || !details)
+            return alert("Please fill all fields!");
+          workouts.push({ day, name, time, encouragement, details });
           localStorage.setItem("workouts", JSON.stringify(workouts));
-          workoutDetailsEl.value = "";
-          renderWorkouts();
+          textarea.value = "";
+          ghostText = "";
+          updateGhost();
+          render();
         });
 
-        tableBody.addEventListener("click", (e) => {
-          if (!e.target.classList.contains("remove-workout-btn")) return;
-          const index = parseInt(e.target.dataset.index);
-          workouts.splice(index, 1);
-          localStorage.setItem("workouts", JSON.stringify(workouts));
-          renderWorkouts();
+        tbody.addEventListener("click", (e) => {
+          if (e.target.classList.contains("remove-btn")) {
+            const idx = e.target.dataset.index;
+            workouts.splice(idx, 1);
+            localStorage.setItem("workouts", JSON.stringify(workouts));
+            render();
+          }
         });
 
-        renderWorkouts(); // 👈 always render on page load
+        render();
       })();
-
-      // --- HISTORY ---
-      (() => {
-        const historyTable = document.querySelector("#historyTable tbody");
-        const detailModal = document.getElementById("detailModal");
-        const modalWorkoutName = document.getElementById("modalWorkoutName");
-        const modalExercises = document.getElementById("modalExercises");
-        const closeModal = document.getElementById("closeModal");
-
-        let completedWorkouts = JSON.parse(
-          localStorage.getItem("completedWorkouts") || "[]"
-        );
-
-        function renderHistory() {
-          historyTable.innerHTML = "";
-          if (completedWorkouts.length === 0) {
-            const tr = document.createElement("tr");
-            tr.innerHTML =
-              '<td colspan="7" style="text-align:center; color:#888;">No completed workouts yet.</td>';
-            historyTable.appendChild(tr);
-            return;
-          }
-          completedWorkouts.forEach((w, i) => {
-            const durationMin = Math.floor((w.duration || 0) / 60);
-            const durationSec = (w.duration || 0) % 60;
-            const tr = document.createElement("tr");
-            tr.innerHTML = `<td>${new Date(
-              w.date
-            ).toLocaleDateString()}</td><td>${w.name}</td><td>${
-              w.day
-            }</td><td>${
-              w.time
-            }</td><td>${durationMin}m ${durationSec}s</td><td><button class="detail-btn" data-index="${i}">More Details</button></td><td><button class="remove-btn" data-index="${i}">Remove</button></td>`;
-            historyTable.appendChild(tr);
-          });
-        }
-
-        historyTable.addEventListener("click", (e) => {
-          const btn = e.target;
-          if (btn.classList.contains("detail-btn")) {
-            const workout = completedWorkouts[btn.dataset.index];
-            modalWorkoutName.textContent = workout.name;
-            modalExercises.innerHTML = "";
-            const scrollContainer = document.createElement("div");
-            scrollContainer.style.maxHeight = "300px";
-            scrollContainer.style.overflowY = "auto";
-            scrollContainer.style.marginTop = "8px";
-
-            const exTable = document.createElement("table");
-            exTable.style.width = "100%";
-            exTable.style.borderCollapse = "collapse";
-            const thead = document.createElement("thead");
-            thead.innerHTML = `<tr><th style="border-bottom:1px solid gold;padding:4px;">Exercise</th><th style="border-bottom:1px solid gold;padding:4px;">Sets</th><th style="border-bottom:1px solid gold;padding:4px;">Reps</th><th style="border-bottom:1px solid gold;padding:4px;">Weight</th></tr>`;
-            exTable.appendChild(thead);
-            const tbody = document.createElement("tbody");
-            workout.exercises.forEach((ex) => {
-              const tr = document.createElement("tr");
-              tr.innerHTML = `<td style="padding:4px;">${
-                ex.name
-              }</td><td style="padding:4px;">${
-                ex.sets || "-"
-              }</td><td style="padding:4px;">${
-                ex.reps || "-"
-              }</td><td style="padding:4px;">${ex.weight || "-"}</td>`;
-              tbody.appendChild(tr);
-            });
-            exTable.appendChild(tbody);
-            scrollContainer.appendChild(exTable);
-            modalExercises.appendChild(scrollContainer);
-            detailModal.style.display = "flex";
-          }
-
-          if (btn.classList.contains("remove-btn")) {
-            const index = parseInt(btn.dataset.index);
-            if (!confirm("Remove this completed workout?")) return;
-            completedWorkouts.splice(index, 1);
-            localStorage.setItem(
-              "completedWorkouts",
-              JSON.stringify(completedWorkouts)
-            );
-            renderHistory();
-          }
-        });
-
-        closeModal.addEventListener("click", () => {
-          detailModal.style.display = "none";
-        });
-
-        renderHistory(); // 👈 always render on page load
-      })();
-
-const workoutDetails = document.getElementById("workoutDetails");
-const addBtn = document.getElementById("addBtn");
-
-let emomInserted = false;
-
-// Detect "EMOM" typed
-workoutDetails.addEventListener("input", () => {
-  const text = workoutDetails.value.toUpperCase();
-
-  if (text.includes("EMOM") && !emomInserted) {
-    // Insert the EMOM template below where EMOM was typed
-    const lines = text.split("\n");
-    const newLines = [];
-
-    for (let line of lines) {
-      newLines.push(line);
-      if (line.toUpperCase().includes("EMOM")) {
-        newLines.push("");
-        newLines.push("— Every Minute On the Minute —");
-        newLines.push("Duration: 60s per round");
-        newLines.push("Rounds: 5");
-        newLines.push("Exercises: Burpees, Push-ups");
-      }
-    }
-
-    workoutDetails.value = newLines.join("\n");
-    emomInserted = true;
-  }
-
-  // Remove the template if EMOM was deleted
-  if (!text.includes("EMOM")) {
-    emomInserted = false;
-  }
-});
-
-// Save workout (basic)
-addBtn.addEventListener("click", () => {
-  const text = workoutDetails.value.trim();
-  if (!text) return alert("Please type a workout first!");
-
-  const workout = {
-    text,
-    timestamp: Date.now(),
-  };
-
-  // Save EMOM details if present
-  if (text.toUpperCase().includes("EMOM")) {
-    const lines = text.split("\n");
-    const emomData = {
-      exercises: [],
-      duration: 60,
-      rounds: 5,
-    };
-
-    for (let line of lines) {
-      if (line.toLowerCase().includes("duration")) {
-        emomData.duration = parseInt(line.replace(/\D/g, "")) || 60;
-      }
-      if (line.toLowerCase().includes("round")) {
-        emomData.rounds = parseInt(line.replace(/\D/g, "")) || 5;
-      }
-      if (line.toLowerCase().includes("exercises")) {
-        emomData.exercises = line
-          .split(":")[1]
-          ?.split(",")
-          .map((x) => x.trim()) || [];
-      }
-    }
-
-    workout.emom = emomData;
-  }
-
-  // Store
-  const all = JSON.parse(localStorage.getItem("workouts") || "[]");
-  all.push(workout);
-  localStorage.setItem("workouts", JSON.stringify(all));
-
-  workoutDetails.value = "";
-  emomInserted = false;
-  
-});
-
-
     </script>
   </body>
 </html>
