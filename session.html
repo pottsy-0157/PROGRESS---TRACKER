@@ -546,7 +546,16 @@
       const emomDurationInput = document.getElementById("emomDuration");
       const emomRoundsInput = document.getElementById("emomRounds");
 
-      let emomInterval; // EMOM timer interval
+      // AUDIO
+      const startSound = new Audio("assets/sounds/start.mp3");
+      const beepSound = new Audio("assets/sounds/beep.mp3");
+      const finalPushSound = new Audio("assets/sounds/finalpush.mp3");
+      const endSound = new Audio("assets/sounds/finish.mp3");
+
+      let emomInterval;
+      let isPaused = false;
+      let remainingTime = 0;
+      let currentRound = 1;
 
       // ----- LOAD WORKOUT -----
       let workout = JSON.parse(
@@ -586,12 +595,12 @@
       allExercisesOrdered.forEach((line, i) => {
         const div = document.createElement("div");
         div.className = "exercise";
-        div.innerHTML = `<div class="exercise-left"><span class="exercise-num">${String(
-          i + 1
-        ).padStart(
-          2,
-          "0"
-        )}</span><span class="exercise-name">${line}</span></div><div class="exercise-right">—</div>`;
+        div.innerHTML = `
+      <div class="exercise-left">
+        <span class="exercise-num">${String(i + 1).padStart(2, "0")}</span>
+        <span class="exercise-name">${line}</span>
+      </div>
+      <div class="exercise-right">—</div>`;
         exerciseList.appendChild(div);
       });
 
@@ -613,6 +622,7 @@
         parseInt(localStorage.getItem("workoutStartTime")) ||
         Date.now() -
           (parseInt(localStorage.getItem("workoutSeconds")) || 0) * 1000;
+
       function startTimer() {
         clearInterval(timerInterval);
         timerInterval = setInterval(() => {
@@ -627,8 +637,6 @@
       // ----- LOAD WORKOUT SCREEN -----
       function loadWorkout() {
         exercisesContainer.innerHTML = "";
-
-        // Merge consecutive cardio/EMOM into blocks
         const merged = [];
         let block = [];
         allExercisesOrdered.forEach((line) => {
@@ -667,39 +675,32 @@
           box.className = "exercise-box";
 
           if (ex.isCardio && hasEMOM) {
-            // Cardio/EMOM block
-            box.innerHTML = `
-        <h3>${ex.items.join(" / ")}</h3>
-        <button class="start-btn" id="startBlockEMOM${exIndex}">Start EMOM</button>
-      `;
-            const startBlockBtn = box.querySelector(
-              `#startBlockEMOM${exIndex}`
-            );
-            startBlockBtn.addEventListener("click", () => openEMOM(ex.items));
+            box.innerHTML = `<h3>${ex.items.join(" / ")}</h3>
+        <button class="start-btn" id="startBlockEMOM${exIndex}">Start EMOM</button>`;
+            box
+              .querySelector(`#startBlockEMOM${exIndex}`)
+              .addEventListener("click", () => openEMOM(ex.items));
           } else if (!ex.isCardio) {
-            // Strength
             box.innerHTML = `<h3>${ex.name}</h3>`;
             for (let i = 1; i <= sets; i++) {
               const suggested = getSuggestedWeight(ex.name);
               const setDiv = document.createElement("div");
               setDiv.className = "set-row";
               setDiv.innerHTML = `
-          <span>Set ${i}</span>
-          <input type="number" class="input-box" placeholder="kg" value="${
-            saved[`weight_${i}`] || suggested
-          }" data-field="weight_${i}">
-          <input type="number" class="input-box" placeholder="reps" value="${
-            saved[`reps_${i}`] || ""
-          }" data-field="reps_${i}">
-          <button class="check-btn ${
-            saved[`done_${i}`] ? "done" : ""
-          }">✓</button>
-        `;
+            <span>Set ${i}</span>
+            <input type="number" class="input-box" placeholder="kg" value="${
+              saved[`weight_${i}`] || suggested
+            }" data-field="weight_${i}">
+            <input type="number" class="input-box" placeholder="reps" value="${
+              saved[`reps_${i}`] || ""
+            }" data-field="reps_${i}">
+            <button class="check-btn ${
+              saved[`done_${i}`] ? "done" : ""
+            }">✓</button>`;
               box.appendChild(setDiv);
             }
           }
 
-          // Footer
           const footer = document.createElement("div");
           footer.className = "footer-info";
           footer.innerHTML = `<span>${
@@ -708,10 +709,8 @@
               : "Suggested weight based on history"
           }</span><span>View History</span>`;
           box.appendChild(footer);
-
           exercisesContainer.appendChild(box);
 
-          // Strength inputs
           if (!ex.isCardio) {
             const inputs = box.querySelectorAll(".input-box");
             const buttons = box.querySelectorAll(".check-btn");
@@ -752,7 +751,7 @@
         );
       }
 
-      // ----- SHOW HISTORY -----
+      // ----- HISTORY -----
       function showHistory(exName) {
         historyTitle.textContent = `History for: ${exName}`;
         historyTableBody.innerHTML = "";
@@ -778,7 +777,8 @@
         () => (historyModal.style.display = "none")
       );
 
-      // ----- EMOM OVERLAY -----
+      // ----- EMOM -----
+      // ----- EMOM -----
       function openEMOM(exercises) {
         emomExerciseList.innerHTML = "";
         exercises.forEach((ex, i) => {
@@ -794,46 +794,81 @@
         clearInterval(emomInterval);
         emomCircle.style.strokeDashoffset = 565.48;
         emomTimerText.textContent = "00:00";
+        isPaused = false;
+      }
+
+      function countdownBeforeStart(seconds, callback) {
+        let count = seconds;
+        const interval = setInterval(() => {
+          emomTimerText.textContent = count;
+          beepSound.play();
+          count--;
+          if (count < 0) {
+            clearInterval(interval);
+            callback();
+          }
+        }, 1000);
       }
 
       emomStartBtn.onclick = () => {
+        if (isPaused) return resumeEMOM();
+
         const roundDuration = parseInt(emomDurationInput.value) || 60;
         const rounds = parseInt(emomRoundsInput.value) || 5;
-        let currentRound = 1;
-        let elapsed = 0;
-        const totalOffset = 565.48;
-        emomCircle.style.strokeDashoffset = totalOffset;
+        currentRound = 1;
 
-        clearInterval(emomInterval);
-        const startTime = Date.now();
-
-        emomInterval = requestAnimationFrame(function update() {
-          const now = Date.now();
-          elapsed = Math.floor((now - startTime) / 1000);
-          const progress =
-            (((now - startTime) / 1000) % roundDuration) / roundDuration;
-          emomCircle.style.strokeDashoffset = totalOffset * (1 - progress);
-          const remaining =
-            roundDuration -
-            Math.floor(((now - startTime) / 1000) % roundDuration);
-          emomTimerText.textContent = `${String(
-            Math.floor(remaining / 60)
-          ).padStart(2, "0")}:${String(remaining % 60).padStart(2, "0")}`;
-
-          if (elapsed >= roundDuration * rounds) {
-            emomTimerText.textContent = "Done!";
-            emomCircle.style.strokeDashoffset = 0;
-            return;
-          }
-          requestAnimationFrame(update);
+        resetEMOM();
+        countdownBeforeStart(5, () => {
+          startSound.play();
+          runEMOM(roundDuration, rounds);
         });
       };
+
+      function runEMOM(roundDuration, rounds) {
+        let timeLeft = roundDuration;
+        const totalOffset = 565.48;
+        clearInterval(emomInterval);
+
+        emomInterval = setInterval(() => {
+          if (timeLeft <= 0) {
+            currentRound++;
+            if (currentRound > rounds) {
+              clearInterval(emomInterval);
+              endSound.play();
+              emomTimerText.textContent = "DONE!";
+              emomCircle.style.strokeDashoffset = 0;
+              return;
+            }
+            countdownBeforeStart(5, () => {
+              timeLeft = roundDuration;
+              startSound.play();
+            });
+            return;
+          }
+
+          // update time + visuals
+          const progress = (timeLeft / roundDuration) * totalOffset;
+          emomCircle.style.strokeDashoffset = progress;
+          emomTimerText.textContent = `${String(
+            Math.floor(timeLeft / 60)
+          ).padStart(2, "0")}:${String(timeLeft % 60).padStart(2, "0")}`;
+
+          // sound cues
+          if (timeLeft === 20) finalPushSound.play();
+          if (timeLeft <= 3 && timeLeft > 0) beepSound.play();
+
+          timeLeft--;
+        }, 1000);
+      }
+
+      function resumeEMOM() {
+        isPaused = false;
+      }
 
       emomExitBtn.onclick = () => {
         clearInterval(emomInterval);
         emomScreen.style.display = "none";
-        emomCircle.style.strokeDashoffset = 565.48;
-        emomTimerText.textContent = "00:00";
+        resetEMOM();
       };
 
       // ----- BUTTONS -----
@@ -842,12 +877,10 @@
         workoutScreen.style.display = "block";
         loadWorkout();
       });
-
       backBtn.addEventListener("click", () => {
         workoutScreen.style.display = "none";
         sessionScreen.style.display = "block";
       });
-
       finishBtn.addEventListener("click", () => {
         const completedWorkout = {
           name: workout.name,
@@ -874,11 +907,9 @@
         );
         allCompleted.push(completedWorkout);
         localStorage.setItem("completedWorkouts", JSON.stringify(allCompleted));
-
         clearInterval(timerInterval);
         localStorage.removeItem("workoutSeconds");
         localStorage.removeItem("workoutStartTime");
-
         workoutScreen.style.display = "none";
         sessionScreen.style.display = "block";
       });
@@ -896,5 +927,3 @@
     </script>
   </body>
 </html>
-
-
