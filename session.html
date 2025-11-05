@@ -220,169 +220,6 @@
         }
       }
     </style>
-    <style>
-      /* emom */
-      /* ----- EMOM SCREEN ----- */
-      .emom-screen {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #0b0b0c;
-        color: #fff;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        z-index: 9999;
-        text-align: center;
-      }
-
-      .emom-screen h2 {
-        font-size: 2rem;
-        margin-bottom: 1.5rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: var(--accent);
-      }
-
-      /* EXERCISE LIST */
-      #emomExerciseList {
-        margin-bottom: 2rem;
-        max-height: 200px;
-        overflow-y: auto;
-        text-align: left;
-        width: 100%;
-        max-width: 400px;
-      }
-
-      #emomExerciseList div {
-        margin: 6px 0;
-        font-size: 1.1rem;
-        padding: 6px 12px;
-        background: #111;
-        border-radius: 8px;
-        border: 1px solid #222;
-      }
-
-      /* CIRCLE TIMER CONTAINER */
-      .emom-timer-container {
-        position: relative;
-        width: 180px;
-        height: 180px;
-        margin-bottom: 1.5rem;
-      }
-
-      .emom-timer-container svg {
-        transform: rotate(-90deg);
-        width: 100%;
-        height: 100%;
-      }
-
-      .emom-timer-container circle {
-        fill: none;
-        stroke-width: 12;
-        stroke-linecap: round;
-      }
-
-      .emom-timer-bg {
-        stroke: #222;
-      }
-
-      .emom-timer-progress {
-        stroke: var(--accent);
-        stroke-dasharray: 565.48;
-        stroke-dashoffset: 565.48;
-        transition: stroke-dashoffset 0.1s linear;
-      }
-
-      /* TIMER TEXT */
-      #emomTimerText {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--accent);
-      }
-
-      /* INPUTS FOR DURATION & ROUNDS */
-      .emom-inputs {
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-        margin-bottom: 1.5rem;
-        flex-wrap: wrap;
-      }
-
-      .emom-inputs input {
-        width: 100px;
-        padding: 0.5rem 0.8rem;
-        border-radius: 8px;
-        border: 1px solid #333;
-        background: #111;
-        color: #fff;
-        font-weight: 600;
-        text-align: center;
-      }
-
-      .emom-inputs input:focus {
-        border-color: var(--accent);
-        outline: none;
-      }
-
-      /* BUTTONS */
-      .emom-screen button {
-        margin: 8px 6px;
-        padding: 0.8rem 1.5rem;
-        border: none;
-        border-radius: 10px;
-        background: var(--accent);
-        color: #000;
-        font-weight: 700;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: 0.2s;
-      }
-
-      .emom-screen button:hover {
-        background: #fff200cc;
-      }
-
-      /* SCROLLBAR FOR EXERCISE LIST */
-      #emomExerciseList::-webkit-scrollbar {
-        width: 6px;
-      }
-
-      #emomExerciseList::-webkit-scrollbar-track {
-        background: #111;
-      }
-
-      #emomExerciseList::-webkit-scrollbar-thumb {
-        background: var(--accent);
-        border-radius: 3px;
-      }
-
-      /* RESPONSIVE */
-      @media (max-width: 500px) {
-        .emom-timer-container {
-          width: 140px;
-          height: 140px;
-        }
-
-        .emom-inputs input {
-          width: 80px;
-        }
-
-        #emomTimerText {
-          font-size: 1.6rem;
-        }
-      }
-    </style>
   </head>
   <body>
     <!-- SCREEN 1 -->
@@ -409,86 +246,6 @@
           Timer: <span id="workoutTimer">00:00</span>
         </p>
         <div id="exercisesContainer"></div>
-
-        <!-- EMOM Overlay -->
-        <div id="emomScreen" class="emom-screen" style="display: none">
-          <h2>EMOM Workout</h2>
-
-          <div style="margin-bottom: 15px">
-            <label
-              >Round duration (seconds):
-              <input
-                type="number"
-                id="emomDuration"
-                value="60"
-                min="10"
-                style="width: 60px"
-            /></label>
-            <label
-              >Number of rounds:
-              <input
-                type="number"
-                id="emomRounds"
-                value="5"
-                min="1"
-                style="width: 60px"
-            /></label>
-          </div>
-
-          <div id="emomExerciseList" style="margin-bottom: 20px"></div>
-
-          <!-- Circular timer -->
-          <div
-            style="
-              position: relative;
-              width: 200px;
-              height: 200px;
-              margin: 0 auto 20px;
-            "
-          >
-            <svg width="200" height="200">
-              <circle
-                cx="100"
-                cy="100"
-                r="90"
-                stroke="#333"
-                stroke-width="15"
-                fill="none"
-              ></circle>
-              <circle
-                id="emomCircle"
-                cx="100"
-                cy="100"
-                r="90"
-                stroke="#fff200"
-                stroke-width="15"
-                fill="none"
-                stroke-dasharray="565.48"
-                stroke-dashoffset="565.48"
-                transform="rotate(-90 100 100)"
-              ></circle>
-            </svg>
-            <div
-              id="emomTimerText"
-              style="
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                font-size: 2rem;
-                font-weight: 700;
-              "
-            >
-              00:00
-            </div>
-          </div>
-
-          <button id="startEmom">Start EMOM</button>
-          <button id="exitEmom">Exit EMOM</button>
-        </div>
-
-        <!-- Finish Screen -->
-
         <button
           id="finishBtn"
           class="start-btn"
@@ -516,11 +273,8 @@
         <button id="closeHistory">Close</button>
       </div>
     </div>
-    <script>
-      // ----- CONFIG -----
-      const hasEMOM = true; // Admin enables EMOM
 
-      // ----- ELEMENTS -----
+    <script>
       const sessionScreen = document.getElementById("sessionScreen");
       const workoutScreen = document.getElementById("workoutScreen");
       const startWorkoutBtn = document.getElementById("startWorkoutBtn");
@@ -530,34 +284,18 @@
       const timerDisplay = document.getElementById("workoutTimer");
       const finishBtn = document.getElementById("finishBtn");
 
-      // HISTORY MODAL
       const historyModal = document.getElementById("historyModal");
       const historyTableBody = document.querySelector("#historyTable tbody");
       const historyTitle = document.getElementById("historyTitle");
       const closeHistory = document.getElementById("closeHistory");
 
-      // EMOM OVERLAY ELEMENTS
-      const emomScreen = document.getElementById("emomScreen");
-      const emomExerciseList = document.getElementById("emomExerciseList");
-      const emomCircle = document.getElementById("emomCircle");
-      const emomTimerText = document.getElementById("emomTimerText");
-      const emomStartBtn = document.getElementById("startEmom");
-      const emomExitBtn = document.getElementById("exitEmom");
-      const emomDurationInput = document.getElementById("emomDuration");
-      const emomRoundsInput = document.getElementById("emomRounds");
+      let timerInterval;
+      let startTime =
+        parseInt(localStorage.getItem("workoutStartTime")) ||
+        Date.now() -
+          (parseInt(localStorage.getItem("workoutSeconds")) || 0) * 1000;
 
-      // AUDIO
-      const startSound = new Audio("assets/sounds/start.mp3");
-      const beepSound = new Audio("assets/sounds/beep.mp3");
-      const finalPushSound = new Audio("assets/sounds/finalpush.mp3");
-      const endSound = new Audio("assets/sounds/finish.mp3");
-
-      let emomInterval;
-      let isPaused = false;
-      let remainingTime = 0;
-      let currentRound = 1;
-
-      // ----- LOAD WORKOUT -----
+      // ----- WORKOUT DATA -----
       let workout = JSON.parse(
         sessionStorage.getItem("selectedWorkout") || "{}"
       );
@@ -565,7 +303,6 @@
         alert("No workout selected!");
         window.location.href = "workouts.html";
       }
-
       document.getElementById("sessionTitle").textContent =
         workout.name || "Workout Session";
       document.getElementById("sessionMeta").textContent = `${
@@ -574,33 +311,33 @@
       document.getElementById("sessionDesc").textContent =
         workout.encouragement || "";
 
-      // ----- PROCESS EXERCISES -----
       const exerciseLines = workout.details.split("\n").filter((l) => l.trim());
-      const strengthExercises = [];
-      const cardioExercises = [];
+      const allExercisesOrdered = [];
       exerciseLines.forEach((line) => {
-        if (
-          line.toLowerCase().includes("cardio") ||
-          line.toLowerCase().includes("emom")
-        ) {
-          cardioExercises.push(line);
-        } else {
-          strengthExercises.push(line);
-        }
+        const lower = line.toLowerCase();
+        if (lower.includes("emom"))
+          allExercisesOrdered.push({ name: line, type: "EMOM" });
+        else if (lower.includes("amrap"))
+          allExercisesOrdered.push({ name: line, type: "AMRAP" });
+        else if (
+          lower.includes("cardio") ||
+          lower.includes("metcon") ||
+          lower.includes("condition")
+        )
+          allExercisesOrdered.push({ name: line, type: "CONDITIONING" });
+        else allExercisesOrdered.push({ name: line, type: "STRENGTH" });
       });
-      const allExercisesOrdered = [...strengthExercises, ...cardioExercises];
 
       // ----- OVERVIEW -----
       exerciseList.innerHTML = "";
-      allExercisesOrdered.forEach((line, i) => {
+      allExercisesOrdered.forEach((ex, i) => {
         const div = document.createElement("div");
         div.className = "exercise";
-        div.innerHTML = `
-      <div class="exercise-left">
-        <span class="exercise-num">${String(i + 1).padStart(2, "0")}</span>
-        <span class="exercise-name">${line}</span>
-      </div>
-      <div class="exercise-right">—</div>`;
+        div.innerHTML = `<div class="exercise-left"><span class="exercise-num">${String(
+          i + 1
+        ).padStart(2, "0")}</span><span class="exercise-name">${
+          ex.name
+        }</span></div><div class="exercise-right">${ex.type}</div>`;
         exerciseList.appendChild(div);
       });
 
@@ -615,14 +352,6 @@
         }
         return "";
       }
-
-      // ----- TIMER -----
-      let timerInterval;
-      let startTime =
-        parseInt(localStorage.getItem("workoutStartTime")) ||
-        Date.now() -
-          (parseInt(localStorage.getItem("workoutSeconds")) || 0) * 1000;
-
       function startTimer() {
         clearInterval(timerInterval);
         timerInterval = setInterval(() => {
@@ -637,88 +366,74 @@
       // ----- LOAD WORKOUT SCREEN -----
       function loadWorkout() {
         exercisesContainer.innerHTML = "";
-        const merged = [];
-        let block = [];
-        allExercisesOrdered.forEach((line) => {
-          if (
-            line.toLowerCase().includes("cardio") ||
-            line.toLowerCase().includes("emom")
-          ) {
-            block.push(line);
-          } else {
-            if (block.length) {
-              merged.push({
-                name: "Cardio / EMOM Block",
-                items: [...block],
-                isCardio: true,
-              });
-              block = [];
-            }
-            merged.push({ name: line, isCardio: false });
-          }
-        });
-        if (block.length)
-          merged.push({
-            name: "Cardio / EMOM Block",
-            items: [...block],
-            isCardio: true,
-          });
-
-        merged.forEach((ex, exIndex) => {
-          const sets = ex.isCardio ? 1 : 3;
-          const saved = JSON.parse(
-            localStorage.getItem(
-              "currentWorkout_" + workout.name + "_" + exIndex
-            ) || "{}"
-          );
+        allExercisesOrdered.forEach((ex, exIndex) => {
           const box = document.createElement("div");
           box.className = "exercise-box";
 
-          if (ex.isCardio && hasEMOM) {
-            box.innerHTML = `<h3>${ex.items.join(" / ")}</h3>
-        <button class="start-btn" id="startBlockEMOM${exIndex}">Start EMOM</button>`;
-            box
-              .querySelector(`#startBlockEMOM${exIndex}`)
-              .addEventListener("click", () => openEMOM(ex.items));
-          } else if (!ex.isCardio) {
+          if (ex.type === "EMOM") {
+            box.innerHTML = `<h3>${ex.name}</h3><button class="start-btn emom-btn">Start EMOM</button><p class="emom-timer">00:00</p>`;
+            const btn = box.querySelector(".emom-btn");
+            const timer = box.querySelector(".emom-timer");
+            let emomSeconds = 60;
+            let emomInterval;
+            btn.addEventListener("click", () => {
+              if (emomInterval) {
+                clearInterval(emomInterval);
+                emomInterval = null;
+                btn.textContent = "Start EMOM";
+                return;
+              }
+              btn.textContent = "Stop EMOM";
+              emomSeconds = 60;
+              timer.textContent = "01:00";
+              emomInterval = setInterval(() => {
+                emomSeconds--;
+                const m = String(Math.floor(emomSeconds / 60)).padStart(2, "0");
+                const s = String(emomSeconds % 60).padStart(2, "0");
+                timer.textContent = `${m}:${s}`;
+                if (emomSeconds <= 0) {
+                  clearInterval(emomInterval);
+                  emomInterval = null;
+                  btn.textContent = "Start EMOM";
+                  alert("EMOM round complete!");
+                }
+              }, 1000);
+            });
+          } else if (ex.type === "AMRAP") {
+            const suggested = getSuggestedWeight(ex.name);
             box.innerHTML = `<h3>${ex.name}</h3>`;
-            for (let i = 1; i <= sets; i++) {
+            const setDiv = document.createElement("div");
+            setDiv.className = "set-row";
+            setDiv.innerHTML = `<span>AMRAP</span><input type="number" class="input-box" placeholder="reps" value="${suggested}" data-field="reps_1">`;
+            box.appendChild(setDiv);
+          } else if (ex.type === "STRENGTH") {
+            const setsCount = workout.sets || 4;
+            box.innerHTML = `<h3>${ex.name}</h3>`;
+            for (let i = 1; i <= setsCount; i++) {
               const suggested = getSuggestedWeight(ex.name);
               const setDiv = document.createElement("div");
               setDiv.className = "set-row";
-              setDiv.innerHTML = `
-            <span>Set ${i}</span>
-            <input type="number" class="input-box" placeholder="kg" value="${
-              saved[`weight_${i}`] || suggested
-            }" data-field="weight_${i}">
-            <input type="number" class="input-box" placeholder="reps" value="${
-              saved[`reps_${i}`] || ""
-            }" data-field="reps_${i}">
-            <button class="check-btn ${
-              saved[`done_${i}`] ? "done" : ""
-            }">✓</button>`;
+              setDiv.innerHTML = `<span>Set ${i}</span><input type="number" class="input-box" placeholder="kg" value="${suggested}" data-field="weight_${i}"><input type="number" class="input-box" placeholder="reps" value="" data-field="reps_${i}"><button class="check-btn">✓</button>`;
               box.appendChild(setDiv);
             }
+          } else if (ex.type === "CONDITIONING") {
+            box.innerHTML = `<h3>${ex.name}</h3><p style="color:var(--muted)">Follow conditioning instructions / timer</p>`;
           }
 
           const footer = document.createElement("div");
           footer.className = "footer-info";
-          footer.innerHTML = `<span>${
-            ex.isCardio
-              ? "Cardio / EMOM session"
-              : "Suggested weight based on history"
-          }</span><span>View History</span>`;
+          footer.innerHTML = `<span>${ex.type}</span><span>View History</span>`;
           box.appendChild(footer);
           exercisesContainer.appendChild(box);
 
-          if (!ex.isCardio) {
+          if (ex.type !== "EMOM" && ex.type !== "CONDITIONING") {
             const inputs = box.querySelectorAll(".input-box");
             const buttons = box.querySelectorAll(".check-btn");
             const viewHistoryBtn = footer.querySelector("span:last-child");
             inputs.forEach((input) =>
               input.addEventListener("input", () => saveExercise(exIndex, box))
             );
-            buttons.forEach((btn) =>
+            buttons.forEach((btn, i) =>
               btn.addEventListener("click", () => {
                 btn.classList.toggle("done");
                 saveExercise(exIndex, box);
@@ -776,100 +491,6 @@
         "click",
         () => (historyModal.style.display = "none")
       );
-
-      // ----- EMOM -----
-      // ----- EMOM -----
-      function openEMOM(exercises) {
-        emomExerciseList.innerHTML = "";
-        exercises.forEach((ex, i) => {
-          const div = document.createElement("div");
-          div.textContent = `${i + 1}. ${ex}`;
-          emomExerciseList.appendChild(div);
-        });
-        emomScreen.style.display = "flex";
-        resetEMOM();
-      }
-
-      function resetEMOM() {
-        clearInterval(emomInterval);
-        emomCircle.style.strokeDashoffset = 565.48;
-        emomTimerText.textContent = "00:00";
-        isPaused = false;
-      }
-
-      function countdownBeforeStart(seconds, callback) {
-        let count = seconds;
-        const interval = setInterval(() => {
-          emomTimerText.textContent = count;
-          beepSound.play();
-          count--;
-          if (count < 0) {
-            clearInterval(interval);
-            callback();
-          }
-        }, 1000);
-      }
-
-      emomStartBtn.onclick = () => {
-        if (isPaused) return resumeEMOM();
-
-        const roundDuration = parseInt(emomDurationInput.value) || 60;
-        const rounds = parseInt(emomRoundsInput.value) || 5;
-        currentRound = 1;
-
-        resetEMOM();
-        countdownBeforeStart(5, () => {
-          startSound.play();
-          runEMOM(roundDuration, rounds);
-        });
-      };
-
-      function runEMOM(roundDuration, rounds) {
-        let timeLeft = roundDuration;
-        const totalOffset = 565.48;
-        clearInterval(emomInterval);
-
-        emomInterval = setInterval(() => {
-          if (timeLeft <= 0) {
-            currentRound++;
-            if (currentRound > rounds) {
-              clearInterval(emomInterval);
-              endSound.play();
-              emomTimerText.textContent = "DONE!";
-              emomCircle.style.strokeDashoffset = 0;
-              return;
-            }
-            countdownBeforeStart(5, () => {
-              timeLeft = roundDuration;
-              startSound.play();
-            });
-            return;
-          }
-
-          // update time + visuals
-          const progress = (timeLeft / roundDuration) * totalOffset;
-          emomCircle.style.strokeDashoffset = progress;
-          emomTimerText.textContent = `${String(
-            Math.floor(timeLeft / 60)
-          ).padStart(2, "0")}:${String(timeLeft % 60).padStart(2, "0")}`;
-
-          // sound cues
-          if (timeLeft === 20) finalPushSound.play();
-          if (timeLeft <= 3 && timeLeft > 0) beepSound.play();
-
-          timeLeft--;
-        }, 1000);
-      }
-
-      function resumeEMOM() {
-        isPaused = false;
-      }
-
-      emomExitBtn.onclick = () => {
-        clearInterval(emomInterval);
-        emomScreen.style.display = "none";
-        resetEMOM();
-      };
 
       // ----- BUTTONS -----
       startWorkoutBtn.addEventListener("click", () => {
