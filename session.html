@@ -10,8 +10,9 @@
         --panel: #0b0b0c;
         --text: #fff;
         --muted: #9c9c9c;
-        --accent: #fff200;
+        --accent: #e2e2e2;
         --outline: #2a2a2c;
+        --rest: #1a1a1a;
       }
       body {
         background: var(--bg);
@@ -19,6 +20,7 @@
         font-family: "Inter", sans-serif;
         margin: 0;
         padding: 0;
+        transition: background 0.3s, color 0.3s;
       }
       header {
         display: flex;
@@ -73,11 +75,6 @@
         border-radius: 14px;
         margin-top: 2rem;
         padding: 1.2rem;
-      }
-      .panel h2 {
-        font-size: 1.2rem;
-        font-weight: 700;
-        margin-bottom: 1rem;
       }
       .exercise {
         display: flex;
@@ -141,9 +138,6 @@
         outline: none;
         font-size: 1rem;
       }
-      .input-box:focus {
-        border-color: var(--accent);
-      }
       .check-btn {
         width: 30px;
         height: 30px;
@@ -172,57 +166,53 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        cursor: pointer;
       }
-      #historyModal {
+
+      /* --- EMOM Overlay --- */
+      #emomOverlay {
         display: none;
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.9);
+        inset: 0;
+        background: var(--bg);
+        color: var(--text);
+        z-index: 100;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
+        transition: background 0.3s;
       }
-      #historyModal .modal-content {
-        background: #222;
-        padding: 1.5rem;
-        border-radius: 12px;
-        max-width: 600px;
-        width: 90%;
-        max-height: 80%;
-        overflow-y: auto;
+      #emomOverlay h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
       }
-      #historyModal table {
-        width: 100%;
-        border-collapse: collapse;
+      #emomTimer {
+        font-size: 5rem;
+        font-weight: 900;
+        margin-bottom: 1rem;
       }
-      #historyModal th,
-      #historyModal td {
-        padding: 8px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        text-align: left;
+      #emomRound {
+        font-size: 1.3rem;
+        margin-bottom: 2rem;
       }
-      #closeHistory {
-        margin-top: 1rem;
-        padding: 0.5rem 1rem;
+      .emom-controls {
+        display: flex;
+        gap: 1rem;
+      }
+      .emom-controls button {
         background: var(--accent);
+        color: #000;
+        font-weight: 700;
         border: none;
-        color: black;
-        border-radius: 6px;
+        border-radius: 12px;
+        padding: 0.9rem 1.4rem;
+        font-size: 1rem;
         cursor: pointer;
-      }
-      @media (max-width: 500px) {
-        .set-row {
-          flex-wrap: wrap;
-          gap: 0.5rem;
-        }
+        transition: 0.2s;
       }
     </style>
   </head>
   <body>
-    <!-- SCREEN 1 -->
     <div id="sessionScreen">
       <header><button onclick="window.history.back()">←</button></header>
       <div class="container">
@@ -237,7 +227,6 @@
       </div>
     </div>
 
-    <!-- SCREEN 2 -->
     <div id="workoutScreen" class="workout-screen">
       <header><button id="backBtn">←</button></header>
       <div class="container">
@@ -246,33 +235,26 @@
           Timer: <span id="workoutTimer">00:00</span>
         </p>
         <div id="exercisesContainer"></div>
-        <button
-          id="finishBtn"
-          class="start-btn"
-          style="flex: 1; background: #fff200"
-        >
-          Finish workout
-        </button>
+        <button id="finishBtn" class="start-btn">Finish workout</button>
       </div>
     </div>
 
-    <!-- HISTORY MODAL -->
-    <div id="historyModal">
-      <div class="modal-content">
-        <h2 id="historyTitle">History</h2>
-        <table id="historyTable">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Workout</th>
-              <th>Weight</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-        <button id="closeHistory">Close</button>
+    <!-- EMOM Overlay -->
+    <div id="emomOverlay">
+      <h1>EMOM</h1>
+      <div id="emomTimer">00:00</div>
+      <div id="emomRound">Round 1</div>
+      <div class="emom-controls">
+        <button id="pauseEMOM">Pause</button>
+        <button id="resetEMOM">Reset</button>
+        <button id="exitEMOM">Exit</button>
       </div>
     </div>
+
+    <audio
+      id="beep"
+      src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
+    ></audio>
 
     <script>
       const sessionScreen = document.getElementById("sessionScreen");
@@ -282,20 +264,26 @@
       const exerciseList = document.getElementById("exerciseList");
       const exercisesContainer = document.getElementById("exercisesContainer");
       const timerDisplay = document.getElementById("workoutTimer");
-      const finishBtn = document.getElementById("finishBtn");
 
-      const historyModal = document.getElementById("historyModal");
-      const historyTableBody = document.querySelector("#historyTable tbody");
-      const historyTitle = document.getElementById("historyTitle");
-      const closeHistory = document.getElementById("closeHistory");
+      const emomOverlay = document.getElementById("emomOverlay");
+      const emomTimer = document.getElementById("emomTimer");
+      const emomRound = document.getElementById("emomRound");
+      const pauseEMOM = document.getElementById("pauseEMOM");
+      const resetEMOM = document.getElementById("resetEMOM");
+      const exitEMOM = document.getElementById("exitEMOM");
+      const beep = document.getElementById("beep");
 
-      let timerInterval;
-      let startTime =
-        parseInt(localStorage.getItem("workoutStartTime")) ||
-        Date.now() -
-          (parseInt(localStorage.getItem("workoutSeconds")) || 0) * 1000;
+      let timerInterval, startTime;
+      let emomInterval,
+        rounds,
+        work,
+        rest,
+        currentRound,
+        timeLeft,
+        phase,
+        running;
 
-      // ----- WORKOUT DATA -----
+      // --- Load workout ---
       let workout = JSON.parse(
         sessionStorage.getItem("selectedWorkout") || "{}"
       );
@@ -311,240 +299,189 @@
       document.getElementById("sessionDesc").textContent =
         workout.encouragement || "";
 
-      const exerciseLines = workout.details.split("\n").filter((l) => l.trim());
-      const allExercisesOrdered = [];
-      exerciseLines.forEach((line) => {
-        const lower = line.toLowerCase();
-        if (lower.includes("emom"))
-          allExercisesOrdered.push({ name: line, type: "EMOM" });
-        else if (lower.includes("amrap"))
-          allExercisesOrdered.push({ name: line, type: "AMRAP" });
-        else if (
-          lower.includes("cardio") ||
-          lower.includes("metcon") ||
-          lower.includes("condition")
-        )
-          allExercisesOrdered.push({ name: line, type: "CONDITIONING" });
-        else allExercisesOrdered.push({ name: line, type: "STRENGTH" });
-      });
-
-      // ----- OVERVIEW -----
-      exerciseList.innerHTML = "";
-      allExercisesOrdered.forEach((ex, i) => {
-        const div = document.createElement("div");
-        div.className = "exercise";
-        div.innerHTML = `<div class="exercise-left"><span class="exercise-num">${String(
-          i + 1
-        ).padStart(2, "0")}</span><span class="exercise-name">${
-          ex.name
-        }</span></div><div class="exercise-right">${ex.type}</div>`;
-        exerciseList.appendChild(div);
-      });
-
-      // ----- HELPERS -----
-      function getSuggestedWeight(name) {
-        const completed = JSON.parse(
-          localStorage.getItem("completedWorkouts") || "[]"
-        );
-        for (let i = completed.length - 1; i >= 0; i--) {
-          const ex = completed[i].exercises.find((e) => e.name === name);
-          if (ex && ex.weight) return ex.weight;
+      const lines = workout.details.split("\n").filter((l) => l.trim());
+      const exercises = lines.map((l) => {
+        const low = l.toLowerCase();
+        if (low.startsWith("emom")) {
+          const match = l.match(/emom (\d+) ?min/i);
+          const emomRounds = match ? parseInt(match[1]) : 10;
+          return {
+            name: l,
+            type: "EMOM",
+            rounds: emomRounds,
+            work: 60,
+            rest: 0,
+          };
         }
-        return "";
-      }
+        if (low.includes("amrap")) return { name: l, type: "AMRAP" };
+        if (
+          low.includes("cardio") ||
+          low.includes("metcon") ||
+          low.includes("condition")
+        )
+          return { name: l, type: "CONDITIONING" };
+        return { name: l, type: "STRENGTH" };
+      });
+
+      exerciseList.innerHTML = exercises
+        .map(
+          (e, i) =>
+            `<div class="exercise">
+          <div class="exercise-left">
+            <span class="exercise-num">${String(i + 1).padStart(2, "0")}</span>
+            <span class="exercise-name">${e.name}</span>
+          </div>
+          <div class="exercise-right">${e.type}</div>
+        </div>`
+        )
+        .join("");
+
       function startTimer() {
         clearInterval(timerInterval);
+        startTime = Date.now();
         timerInterval = setInterval(() => {
           const sec = Math.floor((Date.now() - startTime) / 1000);
-          localStorage.setItem("workoutSeconds", sec);
-          const mins = String(Math.floor(sec / 60)).padStart(2, "0");
-          const secs = String(sec % 60).padStart(2, "0");
-          timerDisplay.textContent = `${mins}:${secs}`;
+          const m = String(Math.floor(sec / 60)).padStart(2, "0");
+          const s = String(sec % 60).padStart(2, "0");
+          timerDisplay.textContent = `${m}:${s}`;
         }, 1000);
       }
 
-      // ----- LOAD WORKOUT SCREEN -----
       function loadWorkout() {
         exercisesContainer.innerHTML = "";
-        allExercisesOrdered.forEach((ex, exIndex) => {
+        exercises.forEach((ex) => {
           const box = document.createElement("div");
           box.className = "exercise-box";
 
           if (ex.type === "EMOM") {
-            box.innerHTML = `<h3>${ex.name}</h3><button class="start-btn emom-btn">Start EMOM</button><p class="emom-timer">00:00</p>`;
-            const btn = box.querySelector(".emom-btn");
-            const timer = box.querySelector(".emom-timer");
-            let emomSeconds = 60;
-            let emomInterval;
-            btn.addEventListener("click", () => {
-              if (emomInterval) {
-                clearInterval(emomInterval);
-                emomInterval = null;
-                btn.textContent = "Start EMOM";
-                return;
-              }
-              btn.textContent = "Stop EMOM";
-              emomSeconds = 60;
-              timer.textContent = "01:00";
-              emomInterval = setInterval(() => {
-                emomSeconds--;
-                const m = String(Math.floor(emomSeconds / 60)).padStart(2, "0");
-                const s = String(emomSeconds % 60).padStart(2, "0");
-                timer.textContent = `${m}:${s}`;
-                if (emomSeconds <= 0) {
-                  clearInterval(emomInterval);
-                  emomInterval = null;
-                  btn.textContent = "Start EMOM";
-                  alert("EMOM round complete!");
-                }
-              }, 1000);
-            });
+            box.innerHTML = `<h3>${ex.name}</h3>
+              <button class="start-btn start-emom">Start EMOM</button>`;
+            box.querySelector(".start-emom").onclick = () => openEMOM(ex);
           } else if (ex.type === "AMRAP") {
-            const suggested = getSuggestedWeight(ex.name);
-            box.innerHTML = `<h3>${ex.name}</h3>`;
-            const setDiv = document.createElement("div");
-            setDiv.className = "set-row";
-            setDiv.innerHTML = `<span>AMRAP</span><input type="number" class="input-box" placeholder="reps" value="${suggested}" data-field="reps_1">`;
-            box.appendChild(setDiv);
+            box.innerHTML = `<h3>${ex.name}</h3>
+              <div class="set-row"><span>AMRAP</span>
+              <input type="number" class="input-box" placeholder="reps"></div>`;
           } else if (ex.type === "STRENGTH") {
-            const setsCount = workout.sets || 4;
+            const setsCount = parseInt(workout.sets) || 4;
             box.innerHTML = `<h3>${ex.name}</h3>`;
             for (let i = 1; i <= setsCount; i++) {
-              const suggested = getSuggestedWeight(ex.name);
-              const setDiv = document.createElement("div");
-              setDiv.className = "set-row";
-              setDiv.innerHTML = `<span>Set ${i}</span><input type="number" class="input-box" placeholder="kg" value="${suggested}" data-field="weight_${i}"><input type="number" class="input-box" placeholder="reps" value="" data-field="reps_${i}"><button class="check-btn">✓</button>`;
-              box.appendChild(setDiv);
+              box.innerHTML += `<div class="set-row">
+                <span>Set ${i}</span>
+                <input type="number" class="input-box" placeholder="kg">
+                <input type="number" class="input-box" placeholder="reps">
+                <button class="check-btn">✓</button>
+              </div>`;
             }
-          } else if (ex.type === "CONDITIONING") {
-            box.innerHTML = `<h3>${ex.name}</h3><p style="color:var(--muted)">Follow conditioning instructions / timer</p>`;
+          } else {
+            box.innerHTML = `<h3>${ex.name}</h3>
+              <p style="color:var(--muted)">Follow conditioning instructions / timer</p>`;
           }
 
-          const footer = document.createElement("div");
-          footer.className = "footer-info";
-          footer.innerHTML = `<span>${ex.type}</span><span>View History</span>`;
-          box.appendChild(footer);
           exercisesContainer.appendChild(box);
-
-          if (ex.type !== "EMOM" && ex.type !== "CONDITIONING") {
-            const inputs = box.querySelectorAll(".input-box");
-            const buttons = box.querySelectorAll(".check-btn");
-            const viewHistoryBtn = footer.querySelector("span:last-child");
-            inputs.forEach((input) =>
-              input.addEventListener("input", () => saveExercise(exIndex, box))
-            );
-            buttons.forEach((btn, i) =>
-              btn.addEventListener("click", () => {
-                btn.classList.toggle("done");
-                saveExercise(exIndex, box);
-              })
-            );
-            viewHistoryBtn.addEventListener("click", () =>
-              showHistory(ex.name)
-            );
-          }
         });
 
-        localStorage.setItem("workoutStartTime", startTime);
+        // --- Check button logic ---
+        document.querySelectorAll(".check-btn").forEach((btn) => {
+          btn.onclick = () => btn.classList.toggle("done");
+        });
+
         startTimer();
       }
 
-      // ----- SAVE EXERCISE -----
-      function saveExercise(exIndex, box) {
-        const data = {};
-        box
-          .querySelectorAll(".input-box")
-          .forEach((input) => (data[input.dataset.field] = input.value));
-        box
-          .querySelectorAll(".check-btn")
-          .forEach(
-            (btn, i) => (data[`done_${i + 1}`] = btn.classList.contains("done"))
-          );
-        localStorage.setItem(
-          "currentWorkout_" + workout.name + "_" + exIndex,
-          JSON.stringify(data)
-        );
-      }
-
-      // ----- HISTORY -----
-      function showHistory(exName) {
-        historyTitle.textContent = `History for: ${exName}`;
-        historyTableBody.innerHTML = "";
-        const completedWorkouts = JSON.parse(
-          localStorage.getItem("completedWorkouts") || "[]"
-        );
-        completedWorkouts.reverse().forEach((w) => {
-          const ex = w.exercises.find((e) => e.name === exName);
-          if (ex) {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `<td>${new Date(
-              w.date
-            ).toLocaleDateString()}</td><td>${w.name}</td><td>${
-              ex.weight || "—"
-            }</td>`;
-            historyTableBody.appendChild(tr);
-          }
-        });
-        historyModal.style.display = "flex";
-      }
-      closeHistory.addEventListener(
-        "click",
-        () => (historyModal.style.display = "none")
-      );
-
-      // ----- BUTTONS -----
-      startWorkoutBtn.addEventListener("click", () => {
+      startWorkoutBtn.onclick = () => {
         sessionScreen.style.display = "none";
         workoutScreen.style.display = "block";
         loadWorkout();
-      });
-      backBtn.addEventListener("click", () => {
+      };
+      backBtn.onclick = () => {
         workoutScreen.style.display = "none";
         sessionScreen.style.display = "block";
-      });
-      finishBtn.addEventListener("click", () => {
-        const completedWorkout = {
-          name: workout.name,
-          day: workout.day,
-          time: workout.time,
-          encouragement: workout.encouragement,
-          date: new Date().toISOString(),
-          duration: parseInt(localStorage.getItem("workoutSeconds")) || 0,
-          exercises: [],
-        };
-        const boxes = exercisesContainer.children;
-        for (let i = 0; i < boxes.length; i++) {
-          const box = boxes[i];
-          const title = box.querySelector("h3").textContent;
-          const weightInputs = box.querySelectorAll(
-            'input[data-field^="weight_"]'
-          );
-          const weight = weightInputs.length > 0 ? weightInputs[0].value : "";
-          completedWorkout.exercises.push({ name: title, weight });
-          localStorage.removeItem("currentWorkout_" + workout.name + "_" + i);
-        }
-        const allCompleted = JSON.parse(
-          localStorage.getItem("completedWorkouts") || "[]"
-        );
-        allCompleted.push(completedWorkout);
-        localStorage.setItem("completedWorkouts", JSON.stringify(allCompleted));
+      };
+
+      // --- Finish button like old design ---
+      const finishBtn = document.getElementById("finishBtn");
+      finishBtn.onclick = () => {
         clearInterval(timerInterval);
-        localStorage.removeItem("workoutSeconds");
-        localStorage.removeItem("workoutStartTime");
+        alert("Workout finished! Great job!");
         workoutScreen.style.display = "none";
         sessionScreen.style.display = "block";
-      });
+      };
 
-      // ----- AUTO RESUME -----
-      const anySaved = Array.from({ length: allExercisesOrdered.length }).some(
-        (_, i) =>
-          localStorage.getItem("currentWorkout_" + workout.name + "_" + i)
-      );
-      if (anySaved) {
-        sessionScreen.style.display = "none";
-        workoutScreen.style.display = "block";
-        loadWorkout();
+      // --- EMOM logic ---
+      function openEMOM(ex) {
+        emomOverlay.style.display = "flex";
+        rounds = ex.rounds;
+        work = ex.work;
+        rest = ex.rest;
+        currentRound = 1;
+        phase = "work";
+        timeLeft = work;
+        updateEMOMDisplay();
+        startEMOM();
       }
+
+      function updateEMOMDisplay() {
+        const mins = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+        const secs = String(timeLeft % 60).padStart(2, "0");
+        emomTimer.textContent = `${mins}:${secs}`;
+        emomRound.textContent = `Round ${currentRound}/${rounds} — ${phase.toUpperCase()}`;
+        document.body.style.background =
+          phase === "work" ? "var(--accent)" : "var(--rest)";
+        document.body.style.color = phase === "work" ? "#000" : "#fff";
+      }
+
+      function startEMOM() {
+        running = true;
+        clearInterval(emomInterval);
+        emomInterval = setInterval(() => {
+          if (timeLeft <= 0) {
+            beep.play();
+            if (phase === "work") {
+              phase = "rest";
+              timeLeft = rest;
+            } else {
+              if (currentRound < rounds) {
+                currentRound++;
+                phase = "work";
+                timeLeft = work;
+              } else {
+                clearInterval(emomInterval);
+                emomOverlay.style.display = "none";
+                document.body.style.background = "var(--bg)";
+                document.body.style.color = "var(--text)";
+                return;
+              }
+            }
+          } else timeLeft--;
+          updateEMOMDisplay();
+        }, 1000);
+      }
+
+      pauseEMOM.onclick = () => {
+        if (running) {
+          clearInterval(emomInterval);
+          running = false;
+          pauseEMOM.textContent = "Resume";
+        } else {
+          running = true;
+          pauseEMOM.textContent = "Pause";
+          startEMOM();
+        }
+      };
+      resetEMOM.onclick = () => {
+        clearInterval(emomInterval);
+        currentRound = 1;
+        phase = "work";
+        timeLeft = work;
+        updateEMOMDisplay();
+        startEMOM();
+      };
+      exitEMOM.onclick = () => {
+        clearInterval(emomInterval);
+        emomOverlay.style.display = "none";
+        document.body.style.background = "var(--bg)";
+        document.body.style.color = "var(--text)";
+      };
     </script>
   </body>
 </html>
