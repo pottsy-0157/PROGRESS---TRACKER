@@ -76,6 +76,30 @@
         margin-top: 2rem;
         padding: 1.2rem;
       }
+
+      .exercise-header {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        background: #141414;
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 4px rgba(255, 255, 255, 0.05);
+      }
+
+      .exercise-title {
+        font-weight: 600;
+        font-size: 1rem;
+        color: #fff;
+      }
+
+      .exercise-meta {
+        font-size: 0.85rem;
+        color: #aaa;
+        margin-top: 2px;
+      }
+
       .exercise {
         display: flex;
         align-items: center;
@@ -251,12 +275,28 @@
       </div>
     </div>
 
-    <audio
-      id="beep"
-      src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
-    ></audio>
-
     <script>
+      // --- Audio ---
+      const beepStart = new Audio(
+        "https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
+      );
+      const beepHalf = new Audio(
+        "https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
+      );
+      const beepEnd = new Audio(
+        "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg"
+      );
+
+      function playSound(audio) {
+        try {
+          audio.currentTime = 0;
+          audio.play();
+        } catch (e) {
+          console.log("Beep blocked:", e);
+        }
+      }
+
+      // --- DOM Elements ---
       const sessionScreen = document.getElementById("sessionScreen");
       const workoutScreen = document.getElementById("workoutScreen");
       const startWorkoutBtn = document.getElementById("startWorkoutBtn");
@@ -271,8 +311,8 @@
       const pauseEMOM = document.getElementById("pauseEMOM");
       const resetEMOM = document.getElementById("resetEMOM");
       const exitEMOM = document.getElementById("exitEMOM");
-      const beep = document.getElementById("beep");
 
+      // --- Variables ---
       let timerInterval, startTime;
       let emomInterval,
         rounds,
@@ -291,6 +331,7 @@
         alert("No workout selected!");
         window.location.href = "workouts.html";
       }
+
       document.getElementById("sessionTitle").textContent =
         workout.name || "Workout Session";
       document.getElementById("sessionMeta").textContent = `${
@@ -299,43 +340,96 @@
       document.getElementById("sessionDesc").textContent =
         workout.encouragement || "";
 
-      const lines = workout.details.split("\n").filter((l) => l.trim());
-      const exercises = lines.map((l) => {
-        const low = l.toLowerCase();
+      // --- Parse workout lines ---
+      const rawLines = workout.details
+        .split("\n")
+        .map((l) => l.trim())
+        .filter((l) => l);
+
+      const exercises = [];
+      let i = 0;
+      while (i < rawLines.length) {
+        let line = rawLines[i];
+        const low = line.toLowerCase();
+
+        if (/^rest/i.test(low)) {
+          i++;
+          continue;
+        }
+
+        let ex = {};
         if (low.startsWith("emom")) {
-          const match = l.match(/emom (\d+) ?min/i);
-          const emomRounds = match ? parseInt(match[1]) : 10;
-          return {
-            name: l,
+          const match = line.match(/emom\s*(\d+)\s*(min|rounds)?/i);
+          ex = {
+            name: line,
             type: "EMOM",
-            rounds: emomRounds,
+            rounds: match ? parseInt(match[1]) : 10,
             work: 60,
             rest: 0,
           };
-        }
-        if (low.includes("amrap")) return { name: l, type: "AMRAP" };
-        if (
+          i++;
+        } else if (low.includes("amrap")) {
+          ex = { name: line, type: "AMRAP" };
+          i++;
+        } else if (
           low.includes("cardio") ||
           low.includes("metcon") ||
-          low.includes("condition")
-        )
-          return { name: l, type: "CONDITIONING" };
-        return { name: l, type: "STRENGTH" };
-      });
+          low.includes("cond")
+        ) {
+          ex = { name: line, type: "CONDITIONING" };
+          i++;
+        } else if (/\d+\s*[xX×]\s*\d+/.test(line)) {
+          const match = line.match(/(\d+)\s*[xX×]\s*(\d+)/);
+          ex = {
+            name: line,
+            type: "STRENGTH",
+            sets: parseInt(match[1]),
+            reps: parseInt(match[2]),
+          };
+          if (
+            i + 1 < rawLines.length &&
+            !/^rest/i.test(rawLines[i + 1]) &&
+            !/\d+\s*[xX×]\s*\d+/.test(rawLines[i + 1])
+          ) {
+            ex.extra = rawLines[i + 1];
+            i++;
+          }
+          i++;
+        } else {
+          // cluster
+          let clusterLines = [line];
+          i++;
+          while (
+            i < rawLines.length &&
+            !/^rest/i.test(rawLines[i]) &&
+            !/\d+\s*[xX×]\s*\d+/.test(rawLines[i]) &&
+            !rawLines[i].toLowerCase().startsWith("emom") &&
+            !rawLines[i].toLowerCase().includes("amrap")
+          ) {
+            clusterLines.push(rawLines[i]);
+            i++;
+          }
+          ex = { name: clusterLines.join("\n"), type: "GENERIC" };
+        }
+        exercises.push(ex);
+      }
 
+      // --- Workout Overview ---
       exerciseList.innerHTML = exercises
         .map(
-          (e, i) =>
-            `<div class="exercise">
-          <div class="exercise-left">
-            <span class="exercise-num">${String(i + 1).padStart(2, "0")}</span>
-            <span class="exercise-name">${e.name}</span>
-          </div>
-          <div class="exercise-right">${e.type}</div>
-        </div>`
+          (e, i) => `
+    <div class="exercise">
+      <div class="exercise-left">
+        <span class="exercise-num">${String(i + 1).padStart(2, "0")}</span>
+        <span class="exercise-name">${e.name.split("\n")[0]}</span>
+      </div>
+      <div class="exercise-right">${e.type}</div>
+    </div>
+  `
         )
         .join("");
 
+      // --- Timer ---
       function startTimer() {
         clearInterval(timerInterval);
         startTime = Date.now();
@@ -347,44 +441,56 @@
         }, 1000);
       }
 
+      // --- Load workout ---
       function loadWorkout() {
         exercisesContainer.innerHTML = "";
-        exercises.forEach((ex) => {
+        exercises.forEach((ex, index) => {
           const box = document.createElement("div");
-          box.className = "exercise-box";
+          box.className = `exercise-box ${ex.type}`;
+          box.dataset.index = index;
+
+          const linesHTML = ex.name
+            .split("\n")
+            .map((l, i) =>
+              i === 0 ? `<p style="font-weight:bold;">${l}</p>` : `<p>${l}</p>`
+            )
+            .join("");
+          let titleHTML = `<div class="exercise-header"><span>${index + 1}. ${
+            ex.name.split("\n")[0]
+          }</span><span>${ex.type}</span></div>`;
 
           if (ex.type === "EMOM") {
-            box.innerHTML = `<h3>${ex.name}</h3>
-              <button class="start-btn start-emom">Start EMOM</button>`;
+            box.innerHTML =
+              titleHTML +
+              `<p>${ex.rounds} rounds • 60s work</p><button class="start-btn start-emom">Start EMOM</button>`;
             box.querySelector(".start-emom").onclick = () => openEMOM(ex);
           } else if (ex.type === "AMRAP") {
-            box.innerHTML = `<h3>${ex.name}</h3>
-              <div class="set-row"><span>AMRAP</span>
-              <input type="number" class="input-box" placeholder="reps"></div>`;
+            box.innerHTML =
+              titleHTML +
+              `<div class="set-row"><span>Reps:</span><input type="number" class="input-box" placeholder="0"></div>`;
           } else if (ex.type === "STRENGTH") {
-            const setsCount = parseInt(workout.sets) || 4;
-            box.innerHTML = `<h3>${ex.name}</h3>`;
-            for (let i = 1; i <= setsCount; i++) {
-              box.innerHTML += `<div class="set-row">
-                <span>Set ${i}</span>
-                <input type="number" class="input-box" placeholder="kg">
-                <input type="number" class="input-box" placeholder="reps">
-                <button class="check-btn">✓</button>
-              </div>`;
+            const matchInfo = ex.name.match(/(\d+)\s*[xX×]\s*(\d+)/);
+            const setRepText = matchInfo
+              ? `${matchInfo[1]} sets × ${matchInfo[2]} reps`
+              : "";
+            box.innerHTML = `<div class="exercise-header"><span>${index + 1}. ${
+              ex.name.split("\n")[0]
+            }</span><span>${setRepText}</span></div>`;
+            if (ex.extra)
+              box.innerHTML += `<p class="strength-extra">${ex.extra}</p>`;
+            for (let s = 1; s <= ex.sets; s++) {
+              box.innerHTML += `<div class="set-row"><span>Set ${s}</span><input type="number" class="input-box" placeholder="${ex.reps}"><input type="number" class="input-box" placeholder="kg"><button class="check-btn">✓</button></div>`;
             }
           } else {
-            box.innerHTML = `<h3>${ex.name}</h3>
-              <p style="color:var(--muted)">Follow conditioning instructions / timer</p>`;
+            box.innerHTML =
+              titleHTML +
+              `<div class="cluster-instructions">${linesHTML}</div>`;
           }
-
           exercisesContainer.appendChild(box);
         });
-
-        // --- Check button logic ---
-        document.querySelectorAll(".check-btn").forEach((btn) => {
-          btn.onclick = () => btn.classList.toggle("done");
-        });
-
+        document
+          .querySelectorAll(".check-btn")
+          .forEach((btn) => (btn.onclick = () => btn.classList.toggle("done")));
         startTimer();
       }
 
@@ -397,29 +503,14 @@
         workoutScreen.style.display = "none";
         sessionScreen.style.display = "block";
       };
-
-      // --- Finish button like old design ---
-      const finishBtn = document.getElementById("finishBtn");
-      finishBtn.onclick = () => {
+      document.getElementById("finishBtn").onclick = () => {
         clearInterval(timerInterval);
         alert("Workout finished! Great job!");
         workoutScreen.style.display = "none";
         sessionScreen.style.display = "block";
       };
 
-      // --- EMOM logic ---
-      function openEMOM(ex) {
-        emomOverlay.style.display = "flex";
-        rounds = ex.rounds;
-        work = ex.work;
-        rest = ex.rest;
-        currentRound = 1;
-        phase = "work";
-        timeLeft = work;
-        updateEMOMDisplay();
-        startEMOM();
-      }
-
+      // --- EMOM ---
       function updateEMOMDisplay() {
         const mins = String(Math.floor(timeLeft / 60)).padStart(2, "0");
         const secs = String(timeLeft % 60).padStart(2, "0");
@@ -429,59 +520,69 @@
           phase === "work" ? "var(--accent)" : "var(--rest)";
         document.body.style.color = phase === "work" ? "#000" : "#fff";
       }
-
-      function startEMOM() {
-        running = true;
-        clearInterval(emomInterval);
-        emomInterval = setInterval(() => {
-          if (timeLeft <= 0) {
-            beep.play();
-            if (phase === "work") {
-              phase = "rest";
-              timeLeft = rest;
-            } else {
-              if (currentRound < rounds) {
-                currentRound++;
-                phase = "work";
-                timeLeft = work;
-              } else {
-                clearInterval(emomInterval);
-                emomOverlay.style.display = "none";
-                document.body.style.background = "var(--bg)";
-                document.body.style.color = "var(--text)";
-                return;
-              }
-            }
-          } else timeLeft--;
-          updateEMOMDisplay();
-        }, 1000);
-      }
-
-      pauseEMOM.onclick = () => {
-        if (running) {
-          clearInterval(emomInterval);
-          running = false;
-          pauseEMOM.textContent = "Resume";
-        } else {
-          running = true;
-          pauseEMOM.textContent = "Pause";
-          startEMOM();
-        }
-      };
-      resetEMOM.onclick = () => {
-        clearInterval(emomInterval);
+      function openEMOM(ex) {
+        emomOverlay.style.display = "flex";
+        rounds = ex.rounds;
+        work = ex.work;
+        rest = ex.rest;
         currentRound = 1;
         phase = "work";
         timeLeft = work;
+        running = true;
         updateEMOMDisplay();
+        playSound(beepStart);
         startEMOM();
-      };
-      exitEMOM.onclick = () => {
+      }
+      function startEMOM() {
+        clearInterval(emomInterval);
+        emomInterval = setInterval(() => {
+          if (!running) return;
+          timeLeft--;
+          if (timeLeft === Math.floor(work / 2) && phase === "work")
+            playSound(beepHalf);
+          if (timeLeft <= 0) {
+            playSound(beepEnd);
+            if (phase === "work") {
+              if (rest > 0) {
+                phase = "rest";
+                timeLeft = rest;
+              } else {
+                currentRound++;
+                if (currentRound > rounds) return endEMOM();
+                phase = "work";
+                timeLeft = work;
+                playSound(beepStart);
+              }
+            } else {
+              currentRound++;
+              if (currentRound > rounds) return endEMOM();
+              phase = "work";
+              timeLeft = work;
+              playSound(beepStart);
+            }
+          }
+          updateEMOMDisplay();
+        }, 1000);
+      }
+      function endEMOM() {
         clearInterval(emomInterval);
         emomOverlay.style.display = "none";
         document.body.style.background = "var(--bg)";
         document.body.style.color = "var(--text)";
+      }
+      pauseEMOM.onclick = () => {
+        running = !running;
+        pauseEMOM.textContent = running ? "Pause" : "Resume";
       };
+      resetEMOM.onclick = () => {
+        currentRound = 1;
+        phase = "work";
+        timeLeft = work;
+        running = true;
+        updateEMOMDisplay();
+        playSound(beepStart);
+      };
+      exitEMOM.onclick = () => endEMOM();
     </script>
   </body>
 </html>
