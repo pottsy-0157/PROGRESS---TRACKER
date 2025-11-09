@@ -211,7 +211,7 @@
     <div id="workoutsContainer"></div>
 
     <script>
-      // Helper to get ISO week number
+      // --- Helper functions ---
       function getWeekNumber(date = new Date()) {
         const d = new Date(
           Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
@@ -222,6 +222,20 @@
         return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
       }
 
+      const hideViewBtn = document.getElementById("hideViewBtn");
+      const calendarView = document.getElementById("calendarView");
+      hideViewBtn.addEventListener("click", () => {
+        calendarView.classList.toggle("hidden");
+        hideViewBtn.textContent = calendarView.classList.contains("hidden")
+          ? "Show calendar"
+          : "Hide calendar";
+      });
+
+      const container = document.getElementById("workoutsContainer");
+      const weekGridEl = document.getElementById("weekGrid");
+      const weekLabelEl = document.getElementById("weekLabel");
+      const prevBtn = document.getElementById("prevWeek");
+      const nextBtn = document.getElementById("nextWeek");
       const daysOrder = [
         "MONDAY",
         "TUESDAY",
@@ -241,22 +255,7 @@
         Sun: "SUNDAY",
       };
 
-      const hideViewBtn = document.getElementById("hideViewBtn");
-      const calendarView = document.getElementById("calendarView");
-      hideViewBtn.addEventListener("click", () => {
-        calendarView.classList.toggle("hidden");
-        hideViewBtn.textContent = calendarView.classList.contains("hidden")
-          ? "Show calendar"
-          : "Hide calendar";
-      });
-
-      const container = document.getElementById("workoutsContainer");
-      const weekGridEl = document.getElementById("weekGrid");
-      const weekLabelEl = document.getElementById("weekLabel");
-      const prevBtn = document.getElementById("prevWeek");
-      const nextBtn = document.getElementById("nextWeek");
-
-      // Set start of current week (Monday)
+      // --- Start of week ---
       let cal_weekStart = (() => {
         const d = new Date();
         const day = d.getDay();
@@ -266,12 +265,27 @@
         return d;
       })();
 
-      // Load workouts from localStorage
+      // --- Test workout (for GitHub/demo purposes) ---
+      if (!localStorage.getItem("workouts")) {
+        localStorage.setItem(
+          "workouts",
+          JSON.stringify([
+            {
+              name: "Test Strength Workout",
+              day: "MONDAY",
+              weekNumber: getWeekNumber(new Date()),
+              time: "18:00",
+              encouragement: "Let's go!",
+            },
+          ])
+        );
+      }
+
       function loadWorkouts() {
         return JSON.parse(localStorage.getItem("workouts") || "[]");
       }
 
-      // Generate week cells
+      // --- Calendar cells ---
       function generateWeekCells() {
         weekGridEl.innerHTML = "";
         const start = new Date(cal_weekStart);
@@ -291,7 +305,9 @@
           const isToday = new Date().toDateString() === day.toDateString();
           cell.innerHTML = `<div class="day-name">${shortName}${
             isToday ? " • Today" : ""
-          }</div><div class="day-date">${day.getDate()}</div><div class="day-content"></div>`;
+          }</div>
+                        <div class="day-date">${day.getDate()}</div>
+                        <div class="day-content"></div>`;
           if (isToday) {
             cell.style.border = "1px solid #f1c40f";
             cell.style.boxShadow = "0 0 10px rgba(241,196,15,0.4)";
@@ -300,34 +316,30 @@
         }
       }
 
-      // Render workouts in week grid
+      // --- Render workouts in calendar ---
       function renderWeekGrid() {
         const workouts = loadWorkouts();
         const mapByDay = workouts.reduce(
           (a, w) => ((a[w.day] = (a[w.day] || []).concat(w)), a),
           {}
         );
-        const currentWeek = getWeekNumber(new Date());
-
         document.querySelectorAll(".day-cell").forEach((cell) => {
           const content = cell.querySelector(".day-content");
           content.innerHTML = "";
           const cellDate = new Date(cell.dataset.iso);
-          const cellWeek = getWeekNumber(cellDate);
           const shortDay = cellDate.toLocaleDateString("en-GB", {
             weekday: "short",
           });
           const adminDay = shortToAdmin[shortDay];
-
           (mapByDay[adminDay] || []).forEach((w) => {
             const div = document.createElement("div");
-            div.className = "session-card"; // anyone can see
+            div.className = "session-card";
             div.innerHTML = `<strong>${w.name}</strong><br>${
               w.time
             }<br><small>${w.encouragement || ""}</small>`;
-            // Anyone can click any workout
-            div.addEventListener("click", () => {
-              sessionStorage.setItem("selectedWorkout", JSON.stringify(w));
+            div.addEventListener("click", (e) => {
+              e.preventDefault();
+              localStorage.setItem("selectedWorkout", JSON.stringify(w));
               window.location.href = "session.html";
             });
             content.appendChild(div);
@@ -335,7 +347,7 @@
         });
       }
 
-      // Render workouts list below calendar
+      // --- Render workouts list ---
       function renderWorkouts() {
         container.innerHTML = "";
         const workouts = loadWorkouts();
@@ -347,22 +359,22 @@
           }</h3><span class="spaces">${
             w.encouragement || ""
           }</span></div><p><strong>${w.time}</strong></p>`;
-          div.addEventListener("click", () => {
-            sessionStorage.setItem("selectedWorkout", JSON.stringify(w));
+          div.addEventListener("click", (e) => {
+            e.preventDefault();
+            localStorage.setItem("selectedWorkout", JSON.stringify(w));
             window.location.href = "session.html";
           });
           container.appendChild(div);
         });
       }
 
-      // Refresh calendar and workouts
+      // --- Refresh ---
       function refresh() {
         generateWeekCells();
         renderWeekGrid();
         renderWorkouts();
       }
 
-      // Prev/Next week buttons
       prevBtn.onclick = () => {
         cal_weekStart.setDate(cal_weekStart.getDate() - 7);
         refresh();
@@ -371,13 +383,10 @@
         cal_weekStart.setDate(cal_weekStart.getDate() + 7);
         refresh();
       };
-
-      // Watch for changes
       window.addEventListener("storage", (e) => {
         if (e.key === "workouts") refresh();
       });
 
-      // Initial load
       document.addEventListener("DOMContentLoaded", () => {
         refresh();
       });
