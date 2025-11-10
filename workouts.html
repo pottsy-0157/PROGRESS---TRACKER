@@ -348,27 +348,22 @@
               w.time
             }<br><small>${w.encouragement || ""}</small>`;
 
+            // Past workout faded
             if (cellWeek < currentWeek) {
-              // Past workout
               div.style.opacity = 0.4;
-              div.style.cursor = "not-allowed"; // visual cue
-            } else if (cellWeek > currentWeek) {
-              // Future workout
-              div.style.opacity = 0.4;
-              div.style.cursor = "not-allowed"; // visual cue
-            } else {
-              // Current week workout → clickable
-              div.addEventListener("click", (e) => {
-                e.preventDefault();
-                localStorage.setItem("selectedWorkout", JSON.stringify(w));
-                window.location.href = "session.html";
-              });
             }
+
+            // Clickable for anyone
+            div.addEventListener("click", (e) => {
+              e.preventDefault();
+              localStorage.setItem("selectedWorkout", JSON.stringify(w));
+              window.location.href = "session.html";
+            });
 
             content.appendChild(div);
           });
 
-          // Future week lock
+          // Future lock
           if (cellWeek > currentWeek) {
             const lock = document.createElement("i");
             lock.className = "fas fa-lock future-lock";
