@@ -19,10 +19,12 @@
         width: 100%;
         overflow-x: hidden;
       }
+
       a {
         color: inherit;
         text-decoration: none;
       }
+
       .nav-center {
         background: #111;
         padding: 10px;
@@ -32,14 +34,17 @@
         z-index: 100;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
       }
+
       .logo {
         font-weight: bold;
         font-size: 1.2rem;
       }
+
       .hide-toggle {
         text-align: center;
         margin: 1.5rem 0;
       }
+
       .hide-btn {
         cursor: pointer;
         background: #1a1a1a;
@@ -50,27 +55,32 @@
         border-radius: 6px;
         transition: 0.2s;
       }
+
       .hide-btn:hover {
         transform: scale(1.05);
       }
+
       .calendar-view {
         width: 95%;
         max-width: 1000px;
         margin: 0 auto;
         transition: all 0.4s ease;
       }
+
       .calendar-view.hidden {
         max-height: 0;
         opacity: 0;
         transform: scaleY(0);
         pointer-events: none;
       }
+
       .week-controls {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin: 0.5rem 0;
       }
+
       .week-btn {
         cursor: pointer;
         background: #fff;
@@ -79,9 +89,11 @@
         border-radius: 6px;
         font-weight: bold;
       }
+
       .week-label {
         font-weight: bold;
       }
+
       .week-grid {
         display: flex;
         flex-wrap: wrap;
@@ -89,6 +101,7 @@
         justify-content: center;
         margin-bottom: 2rem;
       }
+
       .day-cell {
         flex: 1 1 120px;
         max-width: 130px;
@@ -101,16 +114,20 @@
         flex-direction: column;
         justify-content: flex-start;
         position: relative;
+        overflow: hidden;
       }
+
       .day-name {
         font-weight: bold;
         font-size: 0.85rem;
         margin-bottom: 2px;
       }
+
       .day-date {
         font-size: 0.8rem;
         margin-bottom: 4px;
       }
+
       .day-content {
         flex: 1;
         display: flex;
@@ -118,6 +135,7 @@
         gap: 9px;
         overflow-y: auto;
       }
+
       .admin-session {
         padding: 4px 6px;
         border-radius: 6px;
@@ -127,47 +145,28 @@
         background: #1a1a1a;
         transition: 0.2s;
       }
+
       .admin-session:hover {
         background: #333;
       }
-      .past-session {
+
+      .past-session,
+      .future-session {
         opacity: 0.4;
-        cursor: not-allowed;
+        pointer-events: none;
       }
-      #workoutsContainer {
-        width: 95%;
-        max-width: 1000px;
-        margin: 1rem auto 4rem;
-      }
-      .session-card {
-        border: 1px solid #333;
-        border-radius: 8px;
-        margin-bottom: 0.8rem;
-        padding: 0.6rem 0.8rem;
-        cursor: pointer;
-        transition: 0.2s;
-      }
-      .session-card:hover {
-        background: #1a1a1a;
-      }
-      .card-header h3 {
-        margin: 0;
-        font-size: 1rem;
-      }
-      .card-header .spaces {
-        font-size: 0.8rem;
-        color: #aaa;
-      }
+
       .future-lock {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        font-size: 24px;
+        font-size: 28px;
         color: gold;
         opacity: 0.3;
         pointer-events: none;
       }
+
       @media (max-width: 768px) {
         .week-grid {
           flex-direction: column;
@@ -207,11 +206,7 @@
     <div id="workoutsContainer"></div>
 
     <script>
-      // Fix for GitHub Pages - ensure localStorage setup
-      if (!localStorage.getItem("workouts")) {
-        localStorage.setItem("workouts", JSON.stringify([]));
-      }
-
+      // --- Consistent week number across timezones ---
       function getWeekNumber(date = new Date()) {
         const d = new Date(
           Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
@@ -249,9 +244,7 @@
       function renderWorkouts() {
         container.innerHTML = "";
         const workouts = loadWorkouts();
-        const today = new Date();
-        today.setHours(12, 0, 0, 0);
-        const currentWeek = getWeekNumber(today);
+        const currentWeek = getWeekNumber(new Date());
         const thisWeekWorkouts = workouts.filter(
           (w) => w.weekNumber === currentWeek
         );
@@ -321,6 +314,7 @@
             const cell = document.createElement("div");
             cell.className = "day-cell";
             cell.dataset.iso = day.toISOString();
+
             const isToday = new Date().toDateString() === day.toDateString();
             cell.innerHTML = `<div class="day-name">${shortName}${
               isToday ? " • Today" : ""
@@ -339,19 +333,11 @@
             (a, w) => ((a[w.day] = (a[w.day] || []).concat(w)), a),
             {}
           );
-          const today = new Date();
-          today.setHours(12, 0, 0, 0);
-          const currentWeek = getWeekNumber(today);
+          const currentWeek = getWeekNumber(new Date());
 
           document.querySelectorAll(".day-cell").forEach((cell) => {
             const content = cell.querySelector(".day-content");
             content.innerHTML = "";
-
-            // Remove old locks before re-rendering
-            cell
-              .querySelectorAll(".future-lock")
-              .forEach((lock) => lock.remove());
-
             const cellDate = new Date(cell.dataset.iso);
             const cellWeek = getWeekNumber(cellDate);
             const shortDay = cellDate.toLocaleDateString("en-GB", {
@@ -360,9 +346,12 @@
             const adminDay = shortToAdmin[shortDay];
 
             if (cellWeek > currentWeek) {
-              const lock = document.createElement("i");
-              lock.className = "fas fa-lock future-lock";
-              cell.appendChild(lock);
+              // Future week: add one lock (not stacking)
+              if (!cell.querySelector(".future-lock")) {
+                const lock = document.createElement("i");
+                lock.className = "fas fa-lock future-lock";
+                cell.appendChild(lock);
+              }
               return;
             }
 
@@ -370,6 +359,8 @@
               const div = document.createElement("div");
               div.className = "admin-session";
               if (cellWeek < currentWeek) div.classList.add("past-session");
+              if (cellWeek > currentWeek) div.classList.add("future-session");
+
               div.innerHTML = `<strong>${w.name}</strong><br>${
                 w.time
               }<br><small>${w.encouragement || ""}</small>`;
@@ -398,6 +389,7 @@
           cal_weekStart.setDate(cal_weekStart.getDate() + 7);
           refresh();
         };
+
         window.addEventListener("storage", (e) => {
           if (e.key === "workouts") refresh();
         });
