@@ -158,8 +158,6 @@
         font-size: 0.8rem;
         color: #aaa;
       }
-
-      /* --- Future week lock --- */
       .future-lock {
         position: absolute;
         top: 50%;
@@ -170,7 +168,6 @@
         opacity: 0.3;
         pointer-events: none;
       }
-
       @media (max-width: 768px) {
         .week-grid {
           flex-direction: column;
@@ -210,6 +207,11 @@
     <div id="workoutsContainer"></div>
 
     <script>
+      // Fix for GitHub Pages - ensure localStorage setup
+      if (!localStorage.getItem("workouts")) {
+        localStorage.setItem("workouts", JSON.stringify([]));
+      }
+
       function getWeekNumber(date = new Date()) {
         const d = new Date(
           Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
@@ -247,7 +249,9 @@
       function renderWorkouts() {
         container.innerHTML = "";
         const workouts = loadWorkouts();
-        const currentWeek = getWeekNumber(new Date());
+        const today = new Date();
+        today.setHours(12, 0, 0, 0);
+        const currentWeek = getWeekNumber(today);
         const thisWeekWorkouts = workouts.filter(
           (w) => w.weekNumber === currentWeek
         );
@@ -335,11 +339,19 @@
             (a, w) => ((a[w.day] = (a[w.day] || []).concat(w)), a),
             {}
           );
-          const currentWeek = getWeekNumber(new Date());
+          const today = new Date();
+          today.setHours(12, 0, 0, 0);
+          const currentWeek = getWeekNumber(today);
 
           document.querySelectorAll(".day-cell").forEach((cell) => {
             const content = cell.querySelector(".day-content");
             content.innerHTML = "";
+
+            // Remove old locks before re-rendering
+            cell
+              .querySelectorAll(".future-lock")
+              .forEach((lock) => lock.remove());
+
             const cellDate = new Date(cell.dataset.iso);
             const cellWeek = getWeekNumber(cellDate);
             const shortDay = cellDate.toLocaleDateString("en-GB", {
@@ -348,7 +360,6 @@
             const adminDay = shortToAdmin[shortDay];
 
             if (cellWeek > currentWeek) {
-              // future week: show lock
               const lock = document.createElement("i");
               lock.className = "fas fa-lock future-lock";
               cell.appendChild(lock);
@@ -362,11 +373,12 @@
               div.innerHTML = `<strong>${w.name}</strong><br>${
                 w.time
               }<br><small>${w.encouragement || ""}</small>`;
-              if (cellWeek === currentWeek)
+              if (cellWeek === currentWeek) {
                 div.addEventListener("click", () => {
                   sessionStorage.setItem("selectedWorkout", JSON.stringify(w));
                   window.location.href = "session.html";
                 });
+              }
               content.appendChild(div);
             });
           });
@@ -395,5 +407,3 @@
     </script>
   </body>
 </html>
-
-
