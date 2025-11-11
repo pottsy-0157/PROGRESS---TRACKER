@@ -206,7 +206,7 @@
     <div id="workoutsContainer"></div>
 
     <script>
-      // --- Consistent week number across timezones ---
+      // --- Get ISO week number ---
       function getWeekNumber(date = new Date()) {
         const d = new Date(
           Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
@@ -241,13 +241,22 @@
         return JSON.parse(localStorage.getItem("workouts") || "[]");
       }
 
+      // --- RENDER BOTTOM WORKOUT LIST ---
       function renderWorkouts() {
         container.innerHTML = "";
         const workouts = loadWorkouts();
         const currentWeek = getWeekNumber(new Date());
+
+        // ✅ Show all workouts from current week only
         const thisWeekWorkouts = workouts.filter(
-          (w) => w.weekNumber === currentWeek
+          (w) => Number(w.weekNumber) === currentWeek
         );
+
+        if (thisWeekWorkouts.length === 0) {
+          container.innerHTML =
+            "<p style='text-align:center;color:#777;'>No workouts this week.</p>";
+          return;
+        }
 
         daysOrder.forEach((day) => {
           const dayWorkouts = thisWeekWorkouts.filter((w) => w.day === day);
@@ -259,15 +268,17 @@
             dayWorkouts.forEach((w) => {
               const div = document.createElement("div");
               div.className = "session-card";
-              div.innerHTML = `<div class="card-header"><h3>${
-                w.name
-              }</h3><span class="spaces">${
-                w.encouragement || ""
-              }</span></div><p><strong>${w.time}</strong></p>`;
-              div.addEventListener("click", () => {
+              div.innerHTML = `
+            <div class="card-header">
+              <h3>${w.name}</h3>
+              <span class="spaces">${w.encouragement || ""}</span>
+            </div>
+            <p><strong>${w.time}</strong></p>
+          `;
+              div.onclick = () => {
                 sessionStorage.setItem("selectedWorkout", JSON.stringify(w));
                 window.location.href = "session.html";
-              });
+              };
               container.appendChild(div);
             });
           }
@@ -303,7 +314,10 @@
           const start = new Date(cal_weekStart);
           weekLabelEl.textContent = `Week of ${start.toLocaleDateString(
             "en-GB",
-            { day: "numeric", month: "short" }
+            {
+              day: "numeric",
+              month: "short",
+            }
           )}`;
           for (let i = 0; i < 7; i++) {
             const day = new Date(start);
@@ -314,11 +328,12 @@
             const cell = document.createElement("div");
             cell.className = "day-cell";
             cell.dataset.iso = day.toISOString();
-
             const isToday = new Date().toDateString() === day.toDateString();
-            cell.innerHTML = `<div class="day-name">${shortName}${
-              isToday ? " • Today" : ""
-            }</div><div class="day-date">${day.getDate()}</div><div class="day-content"></div>`;
+            cell.innerHTML = `
+          <div class="day-name">${shortName}${isToday ? " • Today" : ""}</div>
+          <div class="day-date">${day.getDate()}</div>
+          <div class="day-content"></div>
+        `;
             if (isToday) {
               cell.style.border = "1px solid #f1c40f";
               cell.style.boxShadow = "0 0 10px rgba(241,196,15,0.4)";
@@ -329,10 +344,10 @@
 
         function renderWeekGrid() {
           const workouts = loadWorkouts();
-          const mapByDay = workouts.reduce(
-            (a, w) => ((a[w.day] = (a[w.day] || []).concat(w)), a),
-            {}
-          );
+          const mapByDay = workouts.reduce((a, w) => {
+            a[w.day] = (a[w.day] || []).concat(w);
+            return a;
+          }, {});
           const currentWeek = getWeekNumber(new Date());
 
           document.querySelectorAll(".day-cell").forEach((cell) => {
@@ -345,13 +360,13 @@
             });
             const adminDay = shortToAdmin[shortDay];
 
+            // --- Clear any old lock ---
+            cell.querySelectorAll(".future-lock").forEach((l) => l.remove());
+
             if (cellWeek > currentWeek) {
-              // Future week: add one lock (not stacking)
-              if (!cell.querySelector(".future-lock")) {
-                const lock = document.createElement("i");
-                lock.className = "fas fa-lock future-lock";
-                cell.appendChild(lock);
-              }
+              const lock = document.createElement("i");
+              lock.className = "fas fa-lock future-lock";
+              cell.appendChild(lock);
               return;
             }
 
@@ -359,16 +374,14 @@
               const div = document.createElement("div");
               div.className = "admin-session";
               if (cellWeek < currentWeek) div.classList.add("past-session");
-              if (cellWeek > currentWeek) div.classList.add("future-session");
-
               div.innerHTML = `<strong>${w.name}</strong><br>${
                 w.time
               }<br><small>${w.encouragement || ""}</small>`;
               if (cellWeek === currentWeek) {
-                div.addEventListener("click", () => {
+                div.onclick = () => {
                   sessionStorage.setItem("selectedWorkout", JSON.stringify(w));
                   window.location.href = "session.html";
-                });
+                };
               }
               content.appendChild(div);
             });
