@@ -206,7 +206,6 @@
     <div id="workoutsContainer"></div>
 
     <script>
-      // --- Get ISO week number ---
       function getWeekNumber(date = new Date()) {
         const d = new Date(
           Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
@@ -237,26 +236,28 @@
         "SUNDAY",
       ];
 
+      // --- Load + Fix Workouts ---
       function loadWorkouts() {
-        return JSON.parse(localStorage.getItem("workouts") || "[]");
+        let workouts = JSON.parse(localStorage.getItem("workouts") || "[]");
+        const currentWeek = getWeekNumber(new Date());
+
+        // If workouts missing weekNumber, add it automatically
+        workouts = workouts.map((w) => ({
+          ...w,
+          weekNumber: w.weekNumber || currentWeek,
+        }));
+
+        localStorage.setItem("workouts", JSON.stringify(workouts));
+        return workouts;
       }
 
-      // --- RENDER BOTTOM WORKOUT LIST ---
       function renderWorkouts() {
         container.innerHTML = "";
         const workouts = loadWorkouts();
         const currentWeek = getWeekNumber(new Date());
-
-        // ✅ Show all workouts from current week only
         const thisWeekWorkouts = workouts.filter(
-          (w) => Number(w.weekNumber) === currentWeek
+          (w) => w.weekNumber === currentWeek
         );
-
-        if (thisWeekWorkouts.length === 0) {
-          container.innerHTML =
-            "<p style='text-align:center;color:#777;'>No workouts this week.</p>";
-          return;
-        }
 
         daysOrder.forEach((day) => {
           const dayWorkouts = thisWeekWorkouts.filter((w) => w.day === day);
@@ -275,10 +276,10 @@
             </div>
             <p><strong>${w.time}</strong></p>
           `;
-              div.onclick = () => {
+              div.addEventListener("click", () => {
                 sessionStorage.setItem("selectedWorkout", JSON.stringify(w));
                 window.location.href = "session.html";
-              };
+              });
               container.appendChild(div);
             });
           }
@@ -304,7 +305,7 @@
           const d = new Date();
           const day = d.getDay();
           const diff = day === 0 ? -6 : 1 - day;
-          d.setHours(0, 0, 0, 0);
+          d.setHours(12, 0, 0, 0);
           d.setDate(d.getDate() + diff);
           return d;
         })();
@@ -319,6 +320,7 @@
               month: "short",
             }
           )}`;
+
           for (let i = 0; i < 7; i++) {
             const day = new Date(start);
             day.setDate(start.getDate() + i);
@@ -328,6 +330,7 @@
             const cell = document.createElement("div");
             cell.className = "day-cell";
             cell.dataset.iso = day.toISOString();
+
             const isToday = new Date().toDateString() === day.toDateString();
             cell.innerHTML = `
           <div class="day-name">${shortName}${isToday ? " • Today" : ""}</div>
@@ -344,10 +347,10 @@
 
         function renderWeekGrid() {
           const workouts = loadWorkouts();
-          const mapByDay = workouts.reduce((a, w) => {
-            a[w.day] = (a[w.day] || []).concat(w);
-            return a;
-          }, {});
+          const mapByDay = workouts.reduce(
+            (a, w) => ((a[w.day] = (a[w.day] || []).concat(w)), a),
+            {}
+          );
           const currentWeek = getWeekNumber(new Date());
 
           document.querySelectorAll(".day-cell").forEach((cell) => {
@@ -360,7 +363,7 @@
             });
             const adminDay = shortToAdmin[shortDay];
 
-            // --- Clear any old lock ---
+            // clear old locks
             cell.querySelectorAll(".future-lock").forEach((l) => l.remove());
 
             if (cellWeek > currentWeek) {
@@ -377,11 +380,12 @@
               div.innerHTML = `<strong>${w.name}</strong><br>${
                 w.time
               }<br><small>${w.encouragement || ""}</small>`;
+
               if (cellWeek === currentWeek) {
-                div.onclick = () => {
+                div.addEventListener("click", () => {
                   sessionStorage.setItem("selectedWorkout", JSON.stringify(w));
                   window.location.href = "session.html";
-                };
+                });
               }
               content.appendChild(div);
             });
@@ -402,7 +406,6 @@
           cal_weekStart.setDate(cal_weekStart.getDate() + 7);
           refresh();
         };
-
         window.addEventListener("storage", (e) => {
           if (e.key === "workouts") refresh();
         });
