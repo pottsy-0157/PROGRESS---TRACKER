@@ -167,6 +167,42 @@
         pointer-events: none;
       }
 
+      /* workout cards */
+      #workoutsContainer {
+        width: 90%;
+        max-width: 900px;
+        margin: 0 auto 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .session-card {
+        background: #111;
+        border-radius: 10px;
+        padding: 1rem;
+        border: 1px solid #222;
+        transition: 0.3s;
+        cursor: pointer;
+      }
+
+      .session-card:hover {
+        background: #1c1c1c;
+        transform: scale(1.01);
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+      }
+
+      .spaces {
+        opacity: 0.7;
+        font-size: 0.9rem;
+      }
+
       @media (max-width: 768px) {
         .week-grid {
           flex-direction: column;
@@ -206,6 +242,7 @@
     <div id="workoutsContainer"></div>
 
     <script>
+      // --- Helper: Get ISO week number ---
       function getWeekNumber(date = new Date()) {
         const d = new Date(
           Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
@@ -218,6 +255,7 @@
 
       const hideViewBtn = document.getElementById("hideViewBtn");
       const calendarView = document.getElementById("calendarView");
+
       hideViewBtn.addEventListener("click", () => {
         calendarView.classList.toggle("hidden");
         hideViewBtn.textContent = calendarView.classList.contains("hidden")
@@ -240,17 +278,15 @@
       function loadWorkouts() {
         let workouts = JSON.parse(localStorage.getItem("workouts") || "[]");
         const currentWeek = getWeekNumber(new Date());
-
-        // If workouts missing weekNumber, add it automatically
         workouts = workouts.map((w) => ({
           ...w,
           weekNumber: w.weekNumber || currentWeek,
         }));
-
         localStorage.setItem("workouts", JSON.stringify(workouts));
         return workouts;
       }
 
+      // --- Render the bottom workout cards ---
       function renderWorkouts() {
         container.innerHTML = "";
         const workouts = loadWorkouts();
@@ -258,6 +294,12 @@
         const thisWeekWorkouts = workouts.filter(
           (w) => w.weekNumber === currentWeek
         );
+
+        if (thisWeekWorkouts.length === 0) {
+          container.innerHTML =
+            "<p style='text-align:center;opacity:0.7;'>No workouts this week.</p>";
+          return;
+        }
 
         daysOrder.forEach((day) => {
           const dayWorkouts = thisWeekWorkouts.filter((w) => w.day === day);
@@ -270,12 +312,13 @@
               const div = document.createElement("div");
               div.className = "session-card";
               div.innerHTML = `
-            <div class="card-header">
-              <h3>${w.name}</h3>
-              <span class="spaces">${w.encouragement || ""}</span>
-            </div>
-            <p><strong>${w.time}</strong></p>
-          `;
+                <div class="card-header">
+                  <h3>${w.name}</h3>
+                  <span class="spaces">${w.encouragement || ""}</span>
+                </div>
+                <p><strong>${w.time}</strong></p>
+                <p>${w.details || ""}</p>
+              `;
               div.addEventListener("click", () => {
                 sessionStorage.setItem("selectedWorkout", JSON.stringify(w));
                 window.location.href = "session.html";
@@ -286,11 +329,13 @@
         });
       }
 
+      // --- Calendar rendering ---
       document.addEventListener("DOMContentLoaded", () => {
         const weekGridEl = document.getElementById("weekGrid");
         const weekLabelEl = document.getElementById("weekLabel");
         const prevBtn = document.getElementById("prevWeek");
         const nextBtn = document.getElementById("nextWeek");
+
         const shortToAdmin = {
           Mon: "MONDAY",
           Tue: "TUESDAY",
@@ -315,10 +360,7 @@
           const start = new Date(cal_weekStart);
           weekLabelEl.textContent = `Week of ${start.toLocaleDateString(
             "en-GB",
-            {
-              day: "numeric",
-              month: "short",
-            }
+            { day: "numeric", month: "short" }
           )}`;
 
           for (let i = 0; i < 7; i++) {
@@ -333,14 +375,18 @@
 
             const isToday = new Date().toDateString() === day.toDateString();
             cell.innerHTML = `
-          <div class="day-name">${shortName}${isToday ? " • Today" : ""}</div>
-          <div class="day-date">${day.getDate()}</div>
-          <div class="day-content"></div>
-        `;
+              <div class="day-name">${shortName}${
+              isToday ? " • Today" : ""
+            }</div>
+              <div class="day-date">${day.getDate()}</div>
+              <div class="day-content"></div>
+            `;
+
             if (isToday) {
               cell.style.border = "1px solid #f1c40f";
               cell.style.boxShadow = "0 0 10px rgba(241,196,15,0.4)";
             }
+
             weekGridEl.appendChild(cell);
           }
         }
@@ -380,7 +426,6 @@
               div.innerHTML = `<strong>${w.name}</strong><br>${
                 w.time
               }<br><small>${w.encouragement || ""}</small>`;
-
               if (cellWeek === currentWeek) {
                 div.addEventListener("click", () => {
                   sessionStorage.setItem("selectedWorkout", JSON.stringify(w));
