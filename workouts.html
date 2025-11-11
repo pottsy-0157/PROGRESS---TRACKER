@@ -212,121 +212,24 @@
     <div id="workoutsContainer"></div>
 
     <script>
-      const hideViewBtn = document.getElementById("hideViewBtn");
-      const calendarView = document.getElementById("calendarView");
-      hideViewBtn.addEventListener("click", () => {
-        calendarView.classList.toggle("hidden");
-        hideViewBtn.textContent = calendarView.classList.contains("hidden")
-          ? "Show calendar"
-          : "Hide calendar";
-      });
-      const container = document.getElementById("workoutsContainer");
-      const daysOrder = [
-        "MONDAY",
-        "TUESDAY",
-        "WEDNESDAY",
-        "THURSDAY",
-        "FRIDAY",
-        "SATURDAY",
-        "SUNDAY",
-      ];
-
-      function getWeekNumber(date = new Date()) {
-        const d = new Date(
-          Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
-        );
-        const dayNum = d.getUTCDay() || 7;
-        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-        return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
-      }
-
-      // Load or add sample workouts if empty
-      function loadWorkouts() {
-        let workouts = JSON.parse(localStorage.getItem("workouts") || "[]");
-        if (workouts.length === 0) {
-          const currentWeek = getWeekNumber(new Date());
-          workouts = [
-            {
-              day: "MONDAY",
-              name: "Box Squats",
-              time: "08:00",
-              encouragement: "Push hard!",
-              weekNumber: currentWeek,
-            },
-            {
-              day: "TUESDAY",
-              name: "EMOM Burpees",
-              time: "09:00",
-              encouragement: "Keep going!",
-              weekNumber: currentWeek,
-            },
-            {
-              day: "WEDNESDAY",
-              name: "Deadlifts",
-              time: "08:30",
-              encouragement: "Focus!",
-              weekNumber: currentWeek,
-            },
-            {
-              day: "FRIDAY",
-              name: "Cardio",
-              time: "10:00",
-              encouragement: "Breathe!",
-              weekNumber: currentWeek,
-            },
-          ];
-          localStorage.setItem("workouts", JSON.stringify(workouts));
-        } else {
-          const currentWeek = getWeekNumber(new Date());
-          workouts = workouts.map((w) => ({
-            ...w,
-            weekNumber: w.weekNumber || currentWeek,
-          }));
-          localStorage.setItem("workouts", JSON.stringify(workouts));
-        }
-        return workouts;
-      }
-
-      function renderWorkouts() {
-        container.innerHTML = "";
-        const workouts = loadWorkouts();
-        const currentWeek = getWeekNumber(new Date());
-        const thisWeek = workouts.filter((w) => w.weekNumber === currentWeek);
-        if (thisWeek.length === 0) {
-          container.innerHTML =
-            "<p style='text-align:center;opacity:0.7;'>No workouts this week.</p>";
-          return;
-        }
-        daysOrder.forEach((day) => {
-          const dayWorkouts = thisWeek.filter((w) => w.day === day);
-          if (dayWorkouts.length > 0) {
-            const dayHeader = document.createElement("h2");
-            dayHeader.textContent = day;
-            container.appendChild(dayHeader);
-            dayWorkouts.forEach((w) => {
-              const div = document.createElement("div");
-              div.className = "session-card";
-              div.innerHTML = `<div class="card-header"><h3>${
-                w.name
-              }</h3><span class="spaces">${
-                w.encouragement || ""
-              }</span></div><p><strong>${w.time || ""}</strong></p>`;
-              div.addEventListener("click", () => {
-                sessionStorage.setItem("selectedWorkout", JSON.stringify(w));
-                window.location.href = "session.html";
-              });
-              container.appendChild(div);
-            });
-          }
-        });
-      }
-
       document.addEventListener("DOMContentLoaded", () => {
+        const hideViewBtn = document.getElementById("hideViewBtn");
+        const calendarView = document.getElementById("calendarView");
+        const container = document.getElementById("workoutsContainer");
         const weekGridEl = document.getElementById("weekGrid");
         const weekLabelEl = document.getElementById("weekLabel");
         const prevBtn = document.getElementById("prevWeek");
         const nextBtn = document.getElementById("nextWeek");
+
+        const daysOrder = [
+          "MONDAY",
+          "TUESDAY",
+          "WEDNESDAY",
+          "THURSDAY",
+          "FRIDAY",
+          "SATURDAY",
+          "SUNDAY",
+        ];
         const shortToAdmin = {
           Mon: "MONDAY",
           Tue: "TUESDAY",
@@ -337,6 +240,103 @@
           Sun: "SUNDAY",
         };
 
+        hideViewBtn.addEventListener("click", () => {
+          calendarView.classList.toggle("hidden");
+          hideViewBtn.textContent = calendarView.classList.contains("hidden")
+            ? "Show calendar"
+            : "Hide calendar";
+        });
+
+        function getWeekNumber(date = new Date()) {
+          const d = new Date(
+            Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+          );
+          const dayNum = d.getUTCDay() || 7;
+          d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+          const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+          return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+        }
+
+        function loadWorkouts() {
+          let workouts = JSON.parse(localStorage.getItem("workouts") || "[]");
+          const currentWeek = getWeekNumber();
+          if (!workouts.length) {
+            workouts = [
+              {
+                day: "MONDAY",
+                name: "Box Squats",
+                time: "08:00",
+                encouragement: "Push hard!",
+                weekNumber: currentWeek,
+              },
+              {
+                day: "TUESDAY",
+                name: "EMOM Burpees",
+                time: "09:00",
+                encouragement: "Keep going!",
+                weekNumber: currentWeek,
+              },
+              {
+                day: "WEDNESDAY",
+                name: "Deadlifts",
+                time: "08:30",
+                encouragement: "Focus!",
+                weekNumber: currentWeek,
+              },
+              {
+                day: "FRIDAY",
+                name: "Cardio",
+                time: "10:00",
+                encouragement: "Breathe!",
+                weekNumber: currentWeek,
+              },
+            ];
+            localStorage.setItem("workouts", JSON.stringify(workouts));
+          } else {
+            workouts = workouts.map((w) => ({
+              ...w,
+              weekNumber: w.weekNumber || currentWeek,
+            }));
+            localStorage.setItem("workouts", JSON.stringify(workouts));
+          }
+          return workouts;
+        }
+
+        function renderWorkouts() {
+          container.innerHTML = "";
+          const workouts = loadWorkouts();
+          const currentWeek = getWeekNumber();
+          const thisWeek = workouts.filter((w) => w.weekNumber === currentWeek);
+          if (!thisWeek.length) {
+            container.innerHTML =
+              "<p style='text-align:center;opacity:0.7;'>No workouts this week.</p>";
+            return;
+          }
+          daysOrder.forEach((day) => {
+            const dayWorkouts = thisWeek.filter((w) => w.day === day);
+            if (dayWorkouts.length) {
+              const dayHeader = document.createElement("h2");
+              dayHeader.textContent = day;
+              container.appendChild(dayHeader);
+              dayWorkouts.forEach((w) => {
+                const div = document.createElement("div");
+                div.className = "session-card";
+                div.innerHTML = `<div class="card-header"><h3>${
+                  w.name
+                }</h3><span class="spaces">${
+                  w.encouragement || ""
+                }</span></div><p><strong>${w.time || ""}</strong></p>`;
+                div.addEventListener("click", () => {
+                  sessionStorage.setItem("selectedWorkout", JSON.stringify(w));
+                  window.location.href = "session.html";
+                });
+                container.appendChild(div);
+              });
+            }
+          });
+        }
+
+        // Calendar
         let cal_weekStart = (() => {
           const d = new Date();
           const day = d.getDay();
@@ -380,7 +380,7 @@
             (a, w) => ((a[w.day] = (a[w.day] || []).concat(w)), a),
             {}
           );
-          const currentWeek = getWeekNumber(new Date());
+          const currentWeek = getWeekNumber();
           document.querySelectorAll(".day-cell").forEach((cell) => {
             const content = cell.querySelector(".day-content");
             content.innerHTML = "";
@@ -414,6 +414,7 @@
           });
         }
 
+        // --- KEEP THIS EXACT BLOCK ---
         function refresh() {
           generateWeekCells();
           renderWeekGrid();
